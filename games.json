@@ -1,23 +1,5 @@
 [
   {
-    "slug": "big-bite-ben",
-    "title": "Big Bite Ben",
-    "tag": "2D",
-    "source": "https://claude.ai/artifact/QxzLW9scLLFqZ1CUFMfb8j"
-  },
-  {
-    "slug": "big-table",
-    "title": "Big Table",
-    "tag": "2D",
-    "source": "https://claude.ai/artifact/HH14wXyY6ZcAgbNqKYLu59"
-  },
-  {
-    "slug": "big-table-3d",
-    "title": "Big Table 3D",
-    "tag": "3D",
-    "source": "https://claude.ai/artifact/WSJTYVUTkFB3bfSy7dP1Us"
-  },
-  {
     "slug": "big-toy-room",
     "title": "Big Toy Room",
     "tag": "3D",
