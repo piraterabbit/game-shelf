@@ -24,7 +24,7 @@ page = f'''<!doctype html>
 html{{scroll-behavior:smooth}}
 body{{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}}
 a{{color:inherit;text-decoration:none}}
-.wrap{{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,48px)}}
+.wrap{{width:100%;margin:0;padding:0 clamp(16px,4vw,64px)}}
 header.top{{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(24px,5vw,72px);align-items:center;padding:clamp(24px,4vw,40px) 0 clamp(28px,4vw,48px)}}
 .avatar{{width:64px;height:64px;border-radius:50%;background:var(--ink);color:var(--ink-fg);display:grid;place-items:center;font-weight:800;font-size:1.35rem;letter-spacing:-.02em}}
 .who{{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 10px}}
@@ -64,6 +64,8 @@ select{{font:inherit;font-weight:500;height:46px;padding:0 14px;border:1px solid
 .name{{display:block;margin-top:12px;font-weight:600;font-size:1.02rem}}
 .empty{{grid-column:1/-1;color:var(--mut)}}
 footer{{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);font-size:.9rem}}
+@media (min-width:1500px){{.hero{{aspect-ratio:16/9;min-height:0}}header.top{{grid-template-columns:1fr 1.2fr}}}}
+@media (min-width:1700px){{.grid{{grid-template-columns:repeat(4,1fr)}}}}
 @media (max-width:1000px){{header.top{{grid-template-columns:1fr}}.hero{{aspect-ratio:16/10;min-height:0}}.grid{{grid-template-columns:repeat(2,1fr)}}}}
 @media (max-width:600px){{.grid{{grid-template-columns:1fr}}nav.bar{{flex-direction:column;align-items:stretch}}select{{width:100%}}.hero .in{{padding:20px}}}}
 @media (prefers-reduced-motion:reduce){{*{{transition:none!important;scroll-behavior:auto!important}}}}
