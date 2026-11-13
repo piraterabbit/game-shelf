@@ -1,0 +1,137 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Big Table</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@700&display=swap">
+<style>
+/* Layout: the bedroom fills the screen; a huge wooden table fills the foreground with toys on top; a small caption card sits top-left. */
+:root{
+  --wall:#bfe0f0; --wall-stripe:#a9d3e8; --wainscot:#f2c6d4; --floor:#d9a86c; --floor-line:#c08f55;
+  --sky:#8fd0f5; --glow:#ffd45e; --curtain:#ef8a7a; --rug:#7fc8a9; --rug2:#fff1b8;
+  --bed:#6fa3d8; --bed2:#ffffff; --wood:#b9824a; --toy1:#ef6f6c; --toy2:#ffd45e; --toy3:#5cc2a0; --line:#d6dff0;
+  --top:#e3a566; --top-hi:#f0bd85; --top-edge:#b87a3e; --leg:#a56a35; --leg-dark:#8a5428; --shadow:rgba(40,25,10,.28);
+  --panel:rgba(255,255,255,.93); --fg:#26324a; --muted:#5d6b86; --accent:#ef6f6c;
+  --font-display:"Fredoka","Trebuchet MS",system-ui,sans-serif; --font-body:"Nunito",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --wall:#1f2850; --wall-stripe:#252f5e; --wainscot:#4a3560; --floor:#3b2f4c; --floor-line:#2f253d;
+  --sky:#0f1a3d; --glow:#fff1b0; --curtain:#8a4a74; --rug:#2f6f67; --rug2:#5b5a86;
+  --bed:#3f5fa0; --bed2:#aab6dd; --wood:#6a4a3a; --toy1:#c9585a; --toy2:#e8c04a; --toy3:#3da184; --line:#36406e;
+  --top:#8a6044; --top-hi:#a37656; --top-edge:#5e3f2b; --leg:#6e4a33; --leg-dark:#563925; --shadow:rgba(0,0,0,.4);
+  --panel:rgba(22,27,52,.92); --fg:#e8ecfa; --muted:#a3aed0; --accent:#ff8a85; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --wall:#1f2850; --wall-stripe:#252f5e; --wainscot:#4a3560; --floor:#3b2f4c; --floor-line:#2f253d;
+  --sky:#0f1a3d; --glow:#fff1b0; --curtain:#8a4a74; --rug:#2f6f67; --rug2:#5b5a86;
+  --bed:#3f5fa0; --bed2:#aab6dd; --wood:#6a4a3a; --toy1:#c9585a; --toy2:#e8c04a; --toy3:#3da184; --line:#36406e;
+  --top:#8a6044; --top-hi:#a37656; --top-edge:#5e3f2b; --leg:#6e4a33; --leg-dark:#563925; --shadow:rgba(0,0,0,.4);
+  --panel:rgba(22,27,52,.92); --fg:#e8ecfa; --muted:#a3aed0; --accent:#ff8a85; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--wall);color:var(--fg);font-family:var(--font-body);min-height:100vh;
+  padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#room{position:fixed;inset:0;width:100%;height:100%;display:block}
+.card{position:relative;z-index:1;display:inline-flex;flex-direction:column;gap:10px;align-items:flex-start;max-width:100%}
+h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:clamp(1.8rem,5vw,3rem);line-height:1;background:var(--panel);padding:10px 20px 12px;border-radius:18px 18px 18px 4px}
+h1 small{display:block;font-family:var(--font-body);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:9px 16px;background:var(--panel);color:var(--fg);cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent)}
+.twinkle{animation:tw 3s ease-in-out infinite}
+@keyframes tw{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<svg id="room" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" role="img" aria-label="A huge wooden table with toys on it, in a child's bedroom">
+  <!-- wall -->
+  <rect width="1600" height="640" fill="var(--wall)"/>
+  <g fill="var(--wall-stripe)"><rect x="0" width="100" height="640"/><rect x="200" width="100" height="640"/><rect x="400" width="100" height="640"/><rect x="600" width="100" height="640"/><rect x="800" width="100" height="640"/><rect x="1000" width="100" height="640"/><rect x="1200" width="100" height="640"/><rect x="1400" width="100" height="640"/></g>
+  <rect y="470" width="1600" height="170" fill="var(--wainscot)"/>
+  <rect y="462" width="1600" height="12" fill="var(--bed2)" opacity=".8"/>
+  <!-- floor -->
+  <rect y="640" width="1600" height="260" fill="var(--floor)"/>
+  <g stroke="var(--floor-line)" stroke-width="3"><path d="M0 700H1600M0 770H1600M0 840H1600"/><path d="M300 640V700M900 640V700M1400 640V700M120 700V770M620 700V770M1180 700V770M420 770V840M1000 770V840M1500 770V840"/></g>
+  <rect y="634" width="1600" height="10" fill="var(--wood)"/>
+  <!-- window -->
+  <g transform="translate(640 90)">
+    <rect width="330" height="330" rx="14" fill="var(--bed2)"/>
+    <rect x="16" y="16" width="298" height="298" rx="6" fill="var(--sky)"/>
+    <circle cx="230" cy="90" r="42" fill="var(--glow)"/>
+    <g fill="var(--bed2)" opacity=".9"><ellipse cx="90" cy="220" rx="60" ry="22"/><ellipse cx="130" cy="205" rx="40" ry="22"/></g>
+    <g fill="var(--glow)"><circle class="twinkle" cx="60" cy="60" r="4"/><circle class="twinkle" cx="150" cy="40" r="3"/><circle class="twinkle" cx="120" cy="120" r="3"/></g>
+    <path d="M165 16V314M16 165H314" stroke="var(--bed2)" stroke-width="12"/>
+    <rect x="-14" y="326" width="358" height="16" rx="6" fill="var(--bed2)"/>
+    <path d="M-40 -10H40V300Q0 330 -40 300Z" fill="var(--curtain)"/><path d="M290 -10H370V300Q330 330 290 300Z" fill="var(--curtain)"/>
+    <rect x="-50" y="-22" width="430" height="14" rx="7" fill="var(--wood)"/>
+  </g>
+  <!-- string lights -->
+  <path d="M0 40Q200 120 400 50T800 50T1200 50T1600 40" stroke="var(--wood)" stroke-width="3" fill="none"/>
+  <g><circle cx="100" cy="82" r="9" fill="var(--toy2)"/><circle cx="260" cy="104" r="9" fill="var(--toy1)"/><circle cx="420" cy="62" r="9" fill="var(--toy3)"/><circle cx="560" cy="48" r="9" fill="var(--toy2)"/><circle cx="1050" cy="52" r="9" fill="var(--toy1)"/><circle cx="1210" cy="62" r="9" fill="var(--toy3)"/><circle cx="1360" cy="84" r="9" fill="var(--toy2)"/><circle cx="1500" cy="70" r="9" fill="var(--toy1)"/></g>
+  <!-- wall stars + banner -->
+  <g fill="var(--glow)"><path d="M1140 200l14 30 32 4-24 22 7 32-29-17-29 17 7-32-24-22 32-4z"/><path d="M1380 300l9 19 21 3-15 14 4 21-19-11-19 11 4-21-15-14 21-3z"/></g>
+  <!-- bed -->
+  <g transform="translate(40 400)">
+    <rect x="0" y="40" width="30" height="270" rx="8" fill="var(--wood)"/>
+    <rect x="30" y="170" width="470" height="120" rx="14" fill="var(--bed)"/>
+    <rect x="30" y="140" width="470" height="50" rx="14" fill="var(--bed2)"/>
+    <ellipse cx="90" cy="140" rx="70" ry="30" fill="var(--bed2)" stroke="var(--line)" stroke-width="4"/>
+    <path d="M200 190h300v100H200z" fill="var(--bed)"/><g fill="var(--bed2)" opacity=".8"><circle cx="260" cy="230" r="9"/><circle cx="340" cy="250" r="9"/><circle cx="420" cy="225" r="9"/></g>
+    <rect x="490" y="120" width="30" height="190" rx="8" fill="var(--wood)"/>
+    <rect x="20" y="290" width="14" height="30" fill="var(--wood)"/><rect x="486" y="290" width="14" height="30" fill="var(--wood)"/>
+    <ellipse cx="150" cy="120" rx="34" ry="30" fill="var(--toy2)"/><circle cx="140" cy="114" r="4" fill="var(--wood)"/><circle cx="162" cy="114" r="4" fill="var(--wood)"/>
+  </g>
+  <!-- bookshelf -->
+  <g transform="translate(1130 360)">
+    <rect width="300" height="290" rx="8" fill="var(--wood)"/>
+    <rect x="12" y="12" width="276" height="120" fill="var(--wall)"/><rect x="12" y="150" width="276" height="128" fill="var(--wall)"/>
+    <g><rect x="28" y="40" width="26" height="92" fill="var(--toy1)"/><rect x="58" y="56" width="22" height="76" fill="var(--toy3)"/><rect x="84" y="32" width="28" height="100" fill="var(--toy2)"/><rect x="116" y="60" width="20" height="72" fill="var(--bed)"/>
+    <rect x="190" y="70" width="64" height="62" rx="8" fill="var(--toy3)"/><circle cx="222" cy="52" r="20" fill="var(--toy3)"/><circle cx="214" cy="48" r="3" fill="var(--wood)"/><circle cx="230" cy="48" r="3" fill="var(--wood)"/>
+    <rect x="30" y="206" width="70" height="72" fill="var(--toy2)"/><rect x="100" y="224" width="70" height="54" fill="var(--toy1)"/><rect x="180" y="190" width="90" height="88" rx="8" fill="var(--bed)"/><path d="M190 190l35-30 35 30z" fill="var(--toy1)"/></g>
+  </g>
+  <!-- rug and floor toys -->
+  <ellipse cx="800" cy="790" rx="520" ry="80" fill="var(--rug)"/><ellipse cx="800" cy="790" rx="420" ry="58" fill="none" stroke="var(--rug2)" stroke-width="10" stroke-dasharray="26 18"/>
+  <g transform="translate(520 740)"><rect width="46" height="46" rx="6" fill="var(--toy1)"/><text x="23" y="34" font-family="Fredoka,sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="var(--bed2)">A</text></g>
+  <g transform="translate(580 760)"><rect width="46" height="46" rx="6" fill="var(--toy2)"/><text x="23" y="34" font-family="Fredoka,sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="var(--wood)">B</text></g>
+  <g transform="translate(550 705) rotate(-8)"><rect width="46" height="46" rx="6" fill="var(--toy3)"/><text x="23" y="34" font-family="Fredoka,sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="var(--bed2)">C</text></g>
+  <g transform="translate(1030 770)"><circle r="34" fill="var(--toy1)"/><path d="M-34 0H34" stroke="var(--bed2)" stroke-width="6"/><circle r="10" fill="var(--bed2)"/></g>
+  <g transform="translate(1110 800)"><rect x="-50" y="-22" width="100" height="28" rx="6" fill="var(--bed)"/><circle cx="-26" cy="10" r="12" fill="var(--wood)"/><circle cx="26" cy="10" r="12" fill="var(--wood)"/><rect x="-10" y="-46" width="40" height="26" rx="4" fill="var(--toy2)"/></g>
+  <!-- THE TABLE -->
+  <ellipse cx="800" cy="888" rx="760" ry="30" fill="var(--shadow)"/>
+  <!-- back legs -->
+  <rect x="300" y="690" width="70" height="190" fill="var(--leg-dark)"/><rect x="1230" y="690" width="70" height="190" fill="var(--leg-dark)"/>
+  <!-- stretcher -->
+  <rect x="360" y="800" width="880" height="26" fill="var(--leg-dark)"/>
+  <!-- front legs -->
+  <path d="M130 760h110l-14 140h-84z" fill="var(--leg)"/><path d="M1360 760h110l-12 140h-84z" fill="var(--leg)"/>
+  <path d="M130 760h30v140h-30z" fill="var(--leg-dark)" opacity=".5"/><path d="M1360 760h30v140h-30z" fill="var(--leg-dark)" opacity=".5"/>
+  <!-- apron + front edge -->
+  <rect x="110" y="716" width="1380" height="52" rx="6" fill="var(--top-edge)"/>
+  <rect x="110" y="716" width="1380" height="14" rx="6" fill="var(--top-hi)" opacity=".5"/>
+  <!-- tabletop surface -->
+  <path d="M290 560H1310L1500 716H100Z" fill="var(--top)"/>
+  <g stroke="var(--top-hi)" stroke-width="3" opacity=".7" fill="none"><path d="M330 590H1270M300 622H1300M262 656H1338M222 690H1378"/></g>
+  <g stroke="var(--top-edge)" stroke-width="2" opacity=".35" fill="none"><path d="M540 568L420 710M800 562V714M1060 568L1180 710"/></g>
+  <!-- things on the table -->
+  <!-- paper + crayons -->
+  <g transform="translate(240 636) rotate(-4)"><rect width="190" height="46" rx="3" fill="var(--bed2)"/><path d="M20 34Q50 6 80 30T150 14" stroke="var(--toy1)" stroke-width="5" fill="none"/><circle cx="160" cy="26" r="9" fill="var(--toy2)"/></g>
+  <g transform="translate(450 612)"><rect width="46" height="46" rx="6" fill="var(--bed)"/><rect x="8" y="-24" width="7" height="30" fill="var(--toy1)"/><rect x="19" y="-30" width="7" height="36" fill="var(--toy2)"/><rect x="30" y="-22" width="7" height="28" fill="var(--toy3)"/></g>
+  <!-- block tower -->
+  <g transform="translate(560 540)"><rect x="0" y="94" width="60" height="42" fill="var(--toy1)"/><rect x="64" y="94" width="60" height="42" fill="var(--toy2)"/><rect x="18" y="52" width="60" height="42" fill="var(--toy3)"/><rect x="46" y="10" width="50" height="42" fill="var(--bed)"/><path d="M46 10l25-30 25 30z" fill="var(--toy1)"/></g>
+  <!-- teddy -->
+  <g transform="translate(790 560)"><ellipse cx="0" cy="70" rx="46" ry="50" fill="var(--toy2)"/><circle cx="0" cy="10" r="36" fill="var(--toy2)"/><circle cx="-28" cy="-18" r="13" fill="var(--toy2)"/><circle cx="28" cy="-18" r="13" fill="var(--toy2)"/><ellipse cx="0" cy="22" rx="16" ry="12" fill="var(--top-hi)"/><circle cx="-12" cy="4" r="4" fill="var(--wood)"/><circle cx="12" cy="4" r="4" fill="var(--wood)"/><circle cx="0" cy="18" r="4" fill="var(--wood)"/></g>
+  <!-- cake -->
+  <g transform="translate(940 640)"><ellipse cx="60" cy="52" rx="74" ry="14" fill="var(--bed2)"/><rect x="0" y="20" width="120" height="32" fill="var(--wainscot)"/><rect x="0" y="20" width="120" height="10" fill="var(--bed2)"/><rect x="56" y="-4" width="8" height="24" fill="var(--toy3)"/><ellipse cx="60" cy="-10" rx="5" ry="9" fill="var(--glow)" class="twinkle"/></g>
+  <!-- tea set -->
+  <g transform="translate(1130 628)"><rect x="0" y="12" width="60" height="42" rx="12" fill="var(--bed2)"/><path d="M60 22q22 0 0 20" stroke="var(--bed2)" stroke-width="7" fill="none"/><rect x="20" y="2" width="20" height="10" fill="var(--toy1)"/><rect x="74" y="34" width="34" height="20" rx="6" fill="var(--bed2)"/><rect x="118" y="34" width="34" height="20" rx="6" fill="var(--bed2)"/></g>
+  <!-- toy car -->
+  <g transform="translate(1250 650)"><rect x="0" y="14" width="100" height="26" rx="8" fill="var(--toy3)"/><rect x="24" y="0" width="52" height="20" rx="6" fill="var(--toy3)"/><circle cx="24" cy="42" r="11" fill="var(--wood)"/><circle cx="78" cy="42" r="11" fill="var(--wood)"/></g>
+</svg>
+<div class="card">
+  <h1>Big Table<small>Seats the whole stuffed-animal family</small></h1>
+  <button id="themeBtn" type="button">Switch to night</button>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById("themeBtn"),root=document.documentElement;
+  function isDark(){var a=root.getAttribute("data-theme");return a?a==="dark":matchMedia("(prefers-color-scheme:dark)").matches}
+  function label(){btn.textContent=isDark()?"Switch to day":"Switch to night"}
+  btn.onclick=function(){root.setAttribute("data-theme",isDark()?"light":"dark");label()};label();
+})();
+</script>
+
+</body></html>

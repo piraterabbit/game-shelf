@@ -1,0 +1,334 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>The Sunken Bell</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: one-screen app. Header with stat strip, scrolling story column, choice stack pinned below. */
+:root{
+  --sea:#0e1a1d;        /* deep water ground */
+  --hull:#152529;       /* raised panel */
+  --kelp:#223a3d;       /* borders, bars track */
+  --foam:#d8e5df;       /* body text, slightly green */
+  --mist:#8aa39d;       /* secondary text */
+  --lantern:#e3b95c;    /* gold, used for titles & gold */
+  --tide:#6fd0b6;       /* accent, success */
+  --blood:#e57d6e;      /* danger */
+  --display:"Cormorant SC",Georgia,serif;
+  --body:"Newsreader",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--sea);color:var(--foam);font-family:var(--body);font-size:18px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0;overflow-x:hidden}
+*{box-sizing:border-box}
+#app{max-width:760px;margin:0 auto;height:100%;display:flex;flex-direction:column;gap:12px;padding-block:14px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;border-bottom:1px solid var(--kelp);padding-bottom:10px}
+h1{font-family:var(--display);font-weight:700;font-size:1.7rem;letter-spacing:.06em;margin:0;color:var(--lantern);text-wrap:balance}
+#where{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+#hud{display:grid;grid-template-columns:1.4fr repeat(3,auto) auto;gap:8px 16px;align-items:center;font-family:var(--mono);font-size:.78rem}
+#hud[hidden]{display:none!important}
+.bar{position:relative;height:20px;background:var(--kelp);border-radius:2px;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--tide);transition:width .35s,background .35s}
+.bar b{position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-weight:500;color:#06201a;mix-blend-mode:normal}
+.bar.low i{background:var(--blood)}
+.stat{color:var(--mist);white-space:nowrap}.stat strong{color:var(--foam);font-weight:500}
+.gold strong{color:var(--lantern)}
+#inv{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;min-height:0}
+#inv:empty{display:none}
+.item{font-family:var(--mono);font-size:.74rem;border:1px solid var(--kelp);background:var(--hull);color:var(--foam);padding:3px 9px;border-radius:2px}
+button.item{cursor:pointer}button.item:hover{border-color:var(--tide)}
+#story{flex:1;min-height:0;overflow-y:auto;padding:4px 4px 8px 0;scroll-behavior:smooth}
+#story p{margin:0 0 .9em;max-width:64ch;text-wrap:pretty}
+#story p.sys{font-family:var(--mono);font-size:.8rem;color:var(--mist);border-left:2px solid var(--kelp);padding-left:10px}
+#story p.good{color:var(--tide)}#story p.bad{color:var(--blood)}
+#story p.you{font-style:italic;color:var(--mist)}
+#story h2{font-family:var(--display);font-weight:700;font-size:1.35rem;letter-spacing:.08em;color:var(--lantern);margin:1.3em 0 .4em}
+#story h2:first-child{margin-top:0}
+#foe{border:1px solid var(--kelp);background:var(--hull);padding:8px 12px;border-radius:2px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center;font-family:var(--mono);font-size:.78rem}
+#foe[hidden]{display:none!important}
+#foe .bar i{background:var(--blood)}#foe .bar b{color:#2a0b07}
+#choices{display:flex;flex-direction:column;gap:8px;padding-bottom:max(2px,env(safe-area-inset-bottom,0px))}
+.choice{font:inherit;font-size:1rem;text-align:left;background:var(--hull);color:var(--foam);border:1px solid var(--kelp);border-radius:2px;padding:10px 14px;cursor:pointer;display:flex;gap:12px;align-items:baseline;transition:border-color .15s,background .15s}
+.choice:hover:not(:disabled){border-color:var(--tide);background:#1a3035}
+.choice:focus-visible,.item:focus-visible,.card:focus-visible{outline:2px solid var(--lantern);outline-offset:2px}
+.choice:disabled{opacity:.45;cursor:not-allowed}
+.choice kbd{font-family:var(--mono);font-size:.72rem;color:var(--mist);border:1px solid var(--kelp);padding:0 6px;border-radius:2px;flex:none}
+.choice .tag{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--lantern);white-space:nowrap;padding-left:10px}
+.choice span.t{min-width:0}
+/* title / class screen */
+#intro{display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0}
+#intro p{margin:0;max-width:60ch}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.card{font:inherit;text-align:left;background:var(--hull);color:var(--foam);border:1px solid var(--kelp);border-radius:2px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--lantern);transform:translateY(-2px)}
+.card h3{font-family:var(--display);font-size:1.3rem;letter-spacing:.08em;margin:0;color:var(--lantern)}
+.card p{font-size:.92rem;color:var(--mist)}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-family:var(--mono);font-size:.74rem}
+.card dt{color:var(--mist)}.card dd{margin:0}
+.end h2{font-size:1.8rem}
+@media (max-width:560px){body{font-size:17px}#hud{grid-template-columns:1fr 1fr}#hud .bar{grid-column:1/-1}h1{font-size:1.4rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div id="app">
+  <header><h1>The Sunken Bell</h1><div id="where">Saltmere</div></header>
+  <div id="hud" hidden>
+    <div class="bar" id="hpbar"><i></i><b></b></div>
+    <div class="stat" id="s-mettle"></div><div class="stat" id="s-wits"></div><div class="stat" id="s-grace"></div>
+    <div class="stat gold" id="s-gold"></div>
+    <div id="inv"></div>
+  </div>
+  <div id="intro"></div>
+  <div id="story" hidden></div>
+  <div id="foe" hidden><span id="foename"></span><div class="bar"><i></i><b></b></div></div>
+  <div id="choices"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const d=n=>1+Math.floor(Math.random()*n);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+
+const CLASSES={
+  warden:{name:'Warden',blurb:'A retired shield-bearer of the harbour watch. Slow to fall, slow to run.',hp:32,mettle:4,wits:2,grace:2,
+    atk:'mettle',ab:{name:'Shield Bash',desc:'Never misses, stuns the foe for a turn.'}},
+  cutpurse:{name:'Cutpurse',blurb:'Quick fingers from the Saltmere docks. Hits late and hits twice as hard.',hp:24,mettle:2,wits:3,grace:4,
+    atk:'grace',ab:{name:'Backstab',desc:'Never misses, double damage.'}},
+  witch:{name:'Hedge-Witch',blurb:'Reads tide tables and old gossip. Frail, but the sea answers her.',hp:22,mettle:1,wits:4,grace:3,
+    atk:'wits',ab:{name:'Brine Bolt',desc:'Never misses, heavy damage.'}}
+};
+const FOES={
+  monk:{name:'Drowned Monk',hp:18,def:10,acc:5,dmg:[3,6],gold:6},
+  gulls:{name:'Bone Gulls',hp:14,def:12,acc:4,dmg:[2,5],gold:4},
+  warden:{name:'The Tide Warden',hp:36,def:12,acc:7,dmg:[4,8],gold:0}
+};
+const ITEMS={potion:'Tonic of Samphire',charm:'Salt Charm',seal:"Abbot's Seal"};
+
+let G=null;      // game state
+let C=null;      // combat state
+let keys=[];     // current choice handlers for number keys
+
+/* ---------- scenes ---------- */
+const SC={
+flats:{place:'The Flats',text:s=>`<h2>The Flats</h2><p>The tide has gone out further than anyone in Saltmere remembers. Out on the mud, the old abbey of St. Aldith leans from the sand like a bad tooth. Its bell is ringing, and nothing is pulling the rope.</p><p>Nine children have walked toward that sound this month. You were hired by the harbourmaster to walk there too, and to stop it.</p>`,
+  choices:[
+   {id:'tide',once:1,label:'Search the tideline',check:{stat:'wits',dc:9},
+     pass:{text:'Among the wrack you find a stoppered bottle of samphire tonic, still sealed.',cls:'good',do:s=>addItem('potion')},
+     fail:{text:'Nothing but crab shells and wet rope.'}},
+   {id:'carve',once:1,label:'Read the carving over the door',check:{stat:'wits',dc:10},
+     pass:{text:'The old Latin is worn but clear: <i>Salt keeps the water honest.</i> Whatever rings that bell does not like salt. You pack some into your belt pouch.',cls:'good',do:s=>{s.flags.salt=1}},
+     fail:{text:'Barnacles have eaten most of the words. Something about water. Something about a keeper.'}},
+   {id:'in',label:'Force the swollen door',check:{stat:'mettle',dc:11},
+     pass:{text:'The door gives with a groan and a gush of black water.',to:'nave'},
+     fail:{text:'The door fights back. Splinters rake your arm before it finally gives.',cls:'bad',do:s=>hurt(3),to:'nave'}},
+   {id:'pick',label:'Slip the lock quietly',check:{stat:'grace',dc:12},
+     pass:{text:'The lock turns. A single coin is wedged in the mechanism, and you pocket it.',cls:'good',do:s=>{s.gold+=4},to:'nave'},
+     fail:{text:'Your pick snaps. You end up climbing in through a broken window, bloodied.',cls:'bad',do:s=>hurt(3),to:'nave'}}
+  ]},
+nave:{place:'The Nave',text:s=>`<h2>The Nave</h2><p>Knee-deep water. Pews float like small boats. At the far end, something in a rotted habit turns its head toward you. It is dripping, and it is still praying.</p>`,
+  fight:{foe:'monk',win:'cloister',flee:null,intro:'The Drowned Monk wades at you with folded hands.'}},
+cloister:{place:'The Cloister',text:s=>`<h2>The Cloister</h2><p>A dry stone walk runs around a courtyard where a dead pear tree still bears fruit. Three arches open off it: a stair down to the <b>crypt</b>, a low door marked <b>refectory</b>, and a spiral stair up toward the sound of the bell. The upper door is barred with an iron plate shaped like a seal.</p>`,
+  enter:s=>{s.flags.nave=1},
+  choices:[
+   {id:'crypt',label:'Descend to the crypt',to:'crypt'},
+   {id:'refect',label:'Knock at the refectory door',to:'refectory'},
+   {id:'rest',once:1,label:'Rest by the dead pear tree',text:'You sit with your back to the trunk. A little warmth comes back to you.',do:s=>heal(10)},
+   {id:'up',label:'Climb toward the bell',if:s=>s.items.includes('seal'),to:'belfry'},
+   {id:'upl',label:'Climb toward the bell (barred)',if:s=>!s.items.includes('seal'),check:{stat:'mettle',dc:15},
+     pass:{text:'You get your shoulder under the plate and heave. The hinges tear out of the wall.',cls:'good',to:'belfry'},
+     fail:{text:'The plate does not move. Your shoulder will remember this.',cls:'bad',do:s=>hurt(2)}}
+  ]},
+refectory:{place:'The Refectory',text:s=>`<h2>The Refectory</h2><p>A long table is laid for forty. At the head sits a candle-bodied figure with a wick for a spine, the ghost of the abbey's cook. <i>"Brother Tallow,"</i> it says, bowing so that wax drips. <i>"Gold still spends, even down here. I take no sides in the matter of the bell."</i></p>`,
+  choices:[
+   {id:'buyp',label:'Buy a Tonic of Samphire',tag:'8 gold',if:s=>!s.flags.boughtP,
+     enabled:s=>s.gold>=8,text:'You trade eight coins for a green bottle.',do:s=>{s.gold-=8;s.flags.boughtP=1;addItem('potion')}},
+   {id:'buyc',label:'Buy a Salt Charm',tag:'12 gold',if:s=>!s.flags.boughtC&&!s.items.includes('charm'),
+     enabled:s=>s.gold>=12,text:'Tallow presses a knot of grey cloth into your hand. It is heavy with salt. <i>"The Warden hates it,"</i> he says.',do:s=>{s.gold-=12;s.flags.boughtC=1;addItem('charm')}},
+   {id:'ask',once:1,label:'Ask about the bell',text:'<i>"Abbot Orrin cast it to call the sea home,"</i> says Tallow. <i>"A bell that rings when no one pulls the rope is a bell that has found a new keeper. Break the keeper and the bell will go quiet. Or take the rope yourself, if you are the sort who wants to be heard."</i>'},
+   {id:'back',label:'Return to the cloister',to:'cloister'}
+  ]},
+crypt:{place:'The Crypt',text:s=>s.flags.cryptDone?`<h2>The Crypt</h2><p>The gulls are bones again. The Abbot's sarcophagus stands open.</p>`:`<h2>The Crypt</h2><p>Steps slick with weed lead down into a vault of stacked coffins. The Abbot's sarcophagus is at the far end, lid ajar. Something is nesting in the ribs of the dead, and it rattles when you breathe.</p>`,
+  choices:[
+   {id:'loot',label:'Pry open the sarcophagus',if:s=>!s.flags.cryptDone,check:{stat:'mettle',dc:10},
+     pass:{text:'The lid slides back. Bone gulls, hundreds of them made of old knuckle and rib, burst up around you.',cls:'bad',to:'cryptfight'},
+     fail:{text:'The lid shifts and the rattling crowd wakes all at once.',cls:'bad',to:'cryptfight'}},
+   {id:'seal',once:1,label:'Take the seal from the Abbot\'s hand',if:s=>!!s.flags.cryptDone,text:'The Abbot\'s fingers are folded round an iron seal. They let go easily, as if relieved. <b>Abbot\'s Seal</b> added.',cls:'good',do:s=>{addItem('seal');s.gold+=10}},
+   {id:'back',label:'Climb back to the cloister',to:'cloister'}
+  ]},
+cryptfight:{place:'The Crypt',text:s=>'',fight:{foe:'gulls',win:'crypt',flee:'cloister',intro:'The gulls dive for your eyes.',onwin:s=>{s.flags.cryptDone=1}}},
+belfry:{place:'The Belfry',text:s=>`<h2>The Belfry</h2><p>The wind blows <i>up</i> here, out of the floor, and it smells of kelp. Under the huge green bell stands a figure in an Abbot's cope with seawater where its face should be, hands round the rope. It speaks with the bell's voice.</p><p><i>"I was the keeper. Now I am the tide's. Come and be kept."</i></p>${s.flags.salt||s.items.includes('charm')?'<p class="sys">You grip the salt. The Warden flinches.</p>':''}`,
+  fight:{foe:'warden',win:'ending',flee:null,intro:'The Tide Warden lets go of the rope and the bell keeps ringing.'}},
+ending:{place:'The Belfry',text:s=>`<h2>The Bell Hangs Still</h2><p>The Warden comes apart in a long, grateful sigh of water. The bell is still. The rope is yours to take.</p>`,
+  choices:[
+   {id:'quiet',label:'Cut the rope and let the bell fall silent',to:'END_GOOD'},
+   {id:'ring',label:'Take the rope and ring it yourself',to:'END_DARK'}
+  ]}
+};
+const ENDS={
+ END_GOOD:{t:'The Silence',p:'You cut the rope. The bell drops its voice with one long note and then nothing. At dawn the tide comes in over the flats, slow and ordinary, and nine children wake in their beds in Saltmere not knowing why they are crying. The harbourmaster pays you in full. Nobody builds on the flats again.'},
+ END_DARK:{t:'The New Keeper',p:'You pull. The bell is beautiful. It carries over the whole coast and the sea comes when it is called. Saltmere is gone by spring and nobody in the next town remembers its name. You do not mind. You are very busy now, and the rope is warm in your hands.'},
+ END_DEAD:{t:'Drowned',p:'The water is cold, and then it is not. Somewhere above you the bell keeps ringing, and it sounds almost like a lullaby.'}
+};
+
+/* ---------- state helpers ---------- */
+function say(html,cls){
+  const st=$('story');
+  if(html.startsWith('<h2')||html.startsWith('<div')){st.insertAdjacentHTML('beforeend',html)}
+  else{const p=document.createElement('p');if(cls)p.className=cls;p.innerHTML=html;st.appendChild(p)}
+  st.scrollTop=st.scrollHeight}
+function addItem(k){G.items.push(k);say(`Gained <b>${ITEMS[k]}</b>.`,'sys');hud()}
+function hurt(n){G.hp=Math.max(0,G.hp-n);say(`You lose ${n} HP.`,'sys bad');hud();if(G.hp<=0)die()}
+function heal(n){const b=G.hp;G.hp=Math.min(G.max,G.hp+n);say(`You recover ${G.hp-b} HP.`,'sys good');hud()}
+function hud(){
+  $('hud').hidden=false;
+  const pc=G.hp/G.max;$('hpbar').classList.toggle('low',pc<=.35);
+  $('hpbar').firstElementChild.style.width=pc*100+'%';$('hpbar').lastElementChild.textContent=`HP ${G.hp} / ${G.max}`;
+  for(const k of['mettle','wits','grace'])$('s-'+k).innerHTML=`${k[0].toUpperCase()+k.slice(1)} <strong>${G[k]}</strong>`;
+  $('s-gold').innerHTML=`Gold <strong>${G.gold}</strong>`;
+  const inv=$('inv');inv.innerHTML='';
+  const counts={};G.items.forEach(i=>counts[i]=(counts[i]||0)+1);
+  for(const k in counts){
+    const label=ITEMS[k]+(counts[k]>1?` ×${counts[k]}`:'');
+    if(k==='potion'){const b=document.createElement('button');b.className='item';b.textContent=label+' (drink)';b.onclick=()=>drink();inv.appendChild(b)}
+    else{const s=document.createElement('span');s.className='item';s.textContent=label;inv.appendChild(s)}
+  }
+}
+function drink(){
+  const i=G.items.indexOf('potion');if(i<0||G.hp<=0)return;
+  G.items.splice(i,1);say('You drink the tonic. It tastes of salt and green things.','you');heal(12);
+  if(C){foeTurn()}else hud();
+}
+function roll(stat,dc){
+  const r=d(20),m=G[stat]*2,tot=r+m,ok=tot>=dc;
+  say(`d20 [${r}] + ${stat[0].toUpperCase()+stat.slice(1)} ${m} = ${tot} vs ${dc}. ${ok?'Success.':'Failure.'}`,'sys '+(ok?'good':'bad'));
+  return ok;
+}
+
+/* ---------- rendering ---------- */
+function setChoices(list){
+  const box=$('choices');box.innerHTML='';keys=[];
+  list.forEach((c,i)=>{
+    const b=document.createElement('button');b.className='choice';b.disabled=!!c.disabled;
+    b.innerHTML=`<kbd>${i+1}</kbd><span class="t">${c.label}</span>${c.tag?`<span class="tag">${c.tag}</span>`:''}`;
+    b.onclick=()=>{if(!b.disabled)c.run()};box.appendChild(b);keys.push(c.disabled?null:c.run);
+  });
+}
+function enter(id){
+  if(id.startsWith('END_'))return finish(id);
+  const sc=SC[id];G.scene=id;$('where').textContent=sc.place;
+  if(sc.enter)sc.enter(G);
+  const html=sc.text(G);if(html)say(html);
+  if(sc.fight)return startFight(sc);
+  showChoices(sc);
+}
+function showChoices(sc){
+  const list=[];
+  sc.choices.forEach(c=>{
+    if(c.once&&G.flags['u_'+c.id])return;
+    if(c.if&&!c.if(G))return;
+    const tag=c.tag||(c.check?`${c.check.stat[0].toUpperCase()+c.check.stat.slice(1)} · DC ${c.check.dc}`:'');
+    list.push({label:c.label,tag,disabled:c.enabled&&!c.enabled(G),run:()=>pick(c,sc)});
+  });
+  setChoices(list);
+}
+function pick(c,sc){
+  if(c.once)G.flags['u_'+c.id]=1;
+  say(c.label,'you');
+  let res=c;
+  if(c.check){res=roll(c.check.stat,c.check.dc)?c.pass:c.fail}
+  if(res.text)say(res.text,res.cls);
+  if(res.do)res.do(G);
+  hud();
+  if(G.hp<=0)return;
+  if(res.to)enter(res.to);else showChoices(sc);
+}
+
+/* ---------- combat ---------- */
+function startFight(sc){
+  const f=FOES[sc.fight.foe];
+  C={f:{...f},def:f,sc,uses:2,stun:false};
+  if(sc.fight.foe==='warden'&&(G.flags.salt||G.items.includes('charm'))){C.f.hp-=10;say('The salt bites. The Warden starts the fight weaker.','sys good')}
+  say(sc.fight.intro,'bad');
+  fightUI();
+}
+function fightUI(){
+  $('foe').hidden=false;$('foename').textContent=C.def.name;
+  const pc=Math.max(0,C.f.hp)/C.def.hp;
+  $('foe').querySelector('.bar i').style.width=pc*100+'%';$('foe').querySelector('.bar b').textContent=`${Math.max(0,C.f.hp)} / ${C.def.hp}`;
+  const cl=CLASSES[G.cls],list=[
+   {label:'Strike',tag:`${cl.atk[0].toUpperCase()+cl.atk.slice(1)}`,run:strike},
+   {label:`${cl.ab.name} <span style="color:var(--mist)">· ${cl.ab.desc}</span>`,tag:`${C.uses} left`,disabled:C.uses<=0,run:ability}
+  ];
+  if(G.items.includes('potion'))list.push({label:'Drink a Tonic of Samphire',tag:'+12 HP',run:drink});
+  if(C.sc.fight.flee)list.push({label:'Run for the stairs',tag:'Grace · DC 12',run:flee});
+  setChoices(list);
+}
+function strike(){
+  const st=CLASSES[G.cls].atk,r=d(20),tot=r+G[st]*2;
+  if(tot>=C.f.def){const dm=d(6)+G[st];C.f.hp-=dm;say(`You strike [${r}+${G[st]*2}=${tot}] for ${dm} damage.`,'good')}
+  else say(`You swing [${r}+${G[st]*2}=${tot}] and miss.`,'sys');
+  after();
+}
+function ability(){
+  C.uses--;const st=CLASSES[G.cls].atk;let dm;
+  if(G.cls==='warden'){dm=d(6)+G.mettle;C.stun=true;say(`Shield Bash for ${dm}. The foe reels.`,'good')}
+  else if(G.cls==='cutpurse'){dm=(d(6)+d(6))+G.grace;say(`Backstab for ${dm}.`,'good')}
+  else{dm=d(6)+d(6)+G.wits+2;say(`Brine Bolt for ${dm}. The water remembers you.`,'good')}
+  C.f.hp-=dm;after();
+}
+function flee(){
+  say('You run.','you');
+  if(roll('grace',12)){say('You make the stairs.','good');const to=C.sc.fight.flee;endFight();enter(to)}
+  else{foeTurn()}
+}
+function after(){if(C.f.hp<=0)return win();foeTurn()}
+function foeTurn(){
+  if(!C)return;
+  if(C.stun){C.stun=false;say(`${C.def.name} is stunned and loses its turn.`,'sys')}
+  else{
+    const need=8+G.grace*2,r=d(20);
+    if(r+C.f.acc>=need){const dm=rnd(...C.f.dmg);say(`${C.def.name} hits you for ${dm}.`,'bad');G.hp=Math.max(0,G.hp-dm);hud();if(G.hp<=0)return die()}
+    else say(`${C.def.name} misses.`,'sys');
+  }
+  hud();fightUI();
+}
+function win(){
+  const f=C.def,sc=C.sc;say(`${f.name} is defeated.`,'good');
+  if(f.gold){G.gold+=f.gold;say(`You find ${f.gold} gold.`,'sys good')}
+  if(sc.fight.onwin)sc.fight.onwin(G);
+  const to=sc.fight.win;endFight();hud();enter(to);
+}
+function endFight(){C=null;$('foe').hidden=true}
+
+/* ---------- start / end ---------- */
+function die(){endFight();finish('END_DEAD')}
+function finish(id){
+  const e=ENDS[id];$('foe').hidden=true;
+  say(`<div class="end"><h2>${e.t}</h2></div><p>${e.p}</p>`);
+  setChoices([{label:'Play again',run:title}]);
+}
+function begin(k){
+  const c=CLASSES[k];
+  G={cls:k,hp:c.hp,max:c.hp,mettle:c.mettle,wits:c.wits,grace:c.grace,gold:5,items:[],flags:{},scene:'flats'};
+  $('intro').hidden=true;$('story').hidden=false;$('story').innerHTML='';
+  hud();enter('flats');
+}
+function title(){
+  G=null;C=null;$('hud').hidden=true;$('story').hidden=true;$('foe').hidden=true;$('where').textContent='Saltmere';
+  const intro=$('intro');intro.hidden=false;
+  intro.innerHTML=`<p>Saltmere is a fishing town at the end of a long coast. This autumn the tide went out and did not come back, and a bell began to ring from the drowned abbey on the flats. Choose who walks out to meet it.</p><div class="cards"></div><p style="font-family:var(--mono);font-size:.74rem;color:var(--mist)">Checks roll d20 plus twice the stat. Number keys pick choices. About 15 minutes, three endings.</p>`;
+  const box=intro.querySelector('.cards');
+  for(const k in CLASSES){const c=CLASSES[k];
+    const b=document.createElement('button');b.className='card';
+    b.innerHTML=`<h3>${c.name}</h3><p>${c.blurb}</p><dl><dt>HP</dt><dd>${c.hp}</dd><dt>Mettle</dt><dd>${c.mettle}</dd><dt>Wits</dt><dd>${c.wits}</dd><dt>Grace</dt><dd>${c.grace}</dd><dt>Skill</dt><dd>${c.ab.name}</dd></dl>`;
+    b.onclick=()=>begin(k);box.appendChild(b)}
+  setChoices([]);
+}
+document.addEventListener('keydown',e=>{
+  const n=parseInt(e.key,10);if(n>=1&&n<=keys.length&&keys[n-1]&&!e.metaKey&&!e.ctrlKey)keys[n-1]();
+});
+title();
+</script>
+
+</body></html>

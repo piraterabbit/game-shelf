@@ -1,0 +1,1015 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Wyrmhold</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Metamorphous&display=swap">
+<style>
+/* Layout: full-bleed 3D island, slim HUD on top, a single context panel docked right (bottom sheet on phones). */
+:root{
+  --ink:#0f0b0e; --ash:#1a1316; --char:#271d21; --line:#4b3a3c;
+  --bone:#eadfcb; --dim:#ab9a8c; --gold:#f2c14e; --ember:#ff6a2b;
+  --moss:#8cc06c; --blood:#e0503f; --ice:#6cc7e6; --viol:#b08cff;
+  --display:'Metamorphous','Palatino Linotype',Georgia,serif;
+  --body:'Alegreya Sans','Segoe UI',system-ui,sans-serif;
+  --pad-l:max(16px,env(safe-area-inset-left,0px));
+  --pad-r:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--bone);font:17px/1.35 var(--body);overflow:hidden;font-variant-numeric:tabular-nums lining-nums;-webkit-user-select:none;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c.pointer{cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+#hud{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);padding:12px var(--pad-r) 0 var(--pad-l);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-start;pointer-events:none;z-index:5}
+.brand{font-family:var(--display);font-size:26px;letter-spacing:.02em;color:var(--gold);text-shadow:0 2px 12px #000a;margin-right:6px;line-height:1.1}
+.brand small{display:block;font-family:var(--body);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#140e11d9;border:1px solid var(--line);border-radius:4px;padding:5px 12px 6px;min-width:84px;backdrop-filter:blur(6px)}
+.chip b{display:block;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.chip span{font-size:22px;font-weight:700;line-height:1.15}
+.chip em{font-style:normal;font-size:13px;color:var(--dim);margin-left:6px}
+.chip.gold span{color:var(--gold)} .chip.meat span{color:#ff9d7a}
+.chip.neg em{color:var(--blood)}
+.rank{margin-left:auto;min-width:200px;background:#140e11d9;border:1px solid var(--line);border-radius:4px;padding:5px 12px 8px;backdrop-filter:blur(6px)}
+.rank b{display:block;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.rank span{font-family:var(--display);font-size:17px;color:var(--bone)}
+.bar{height:6px;background:#0008;border-radius:3px;overflow:hidden;margin-top:6px;border:1px solid #ffffff10}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--gold));transition:width .3s}
+
+#banner{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 118px);transform:translateX(-50%);z-index:6;display:flex;gap:14px;align-items:center;background:#3a1210ee;border:1px solid var(--blood);border-radius:4px;padding:8px 10px 8px 16px;box-shadow:0 0 28px #e0503f55;animation:pulse 1.4s ease-in-out infinite;max-width:calc(100% - 32px)}
+#banner strong{font-family:var(--display);font-weight:400;color:#ffb3a6}
+@keyframes pulse{50%{box-shadow:0 0 38px #e0503f99}}
+
+#panel{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 118px);bottom:max(16px,env(safe-area-inset-bottom,0px));width:336px;overflow-y:auto;background:#150f12ea;border:1px solid var(--line);border-radius:6px;padding:14px 16px 18px;z-index:5;touch-action:pan-y;backdrop-filter:blur(8px);scrollbar-width:thin;scrollbar-color:var(--line) transparent;-webkit-user-select:none;user-select:none}
+#panel h2{font-family:var(--display);font-weight:400;font-size:21px;margin:0;color:var(--gold);line-height:1.2;text-wrap:balance}
+#panel h3{font-size:12px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:16px 0 6px}
+#panel p{margin:6px 0;color:#cdbfae}
+.sub{font-size:14px;color:var(--dim)}
+.head{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}
+.x{background:none;border:1px solid var(--line);border-radius:4px;width:30px;height:30px;line-height:1;font-size:18px;color:var(--dim);flex:none}
+.x:hover{color:var(--bone);border-color:var(--dim)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid #ffffff0d}
+.kv span:first-child{color:var(--dim)}
+.btn{display:block;width:100%;text-align:left;background:var(--char);border:1px solid var(--line);border-radius:4px;padding:9px 12px;margin-top:8px}
+.btn:hover:not(:disabled){border-color:var(--gold);background:#33262a}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.go{background:linear-gradient(180deg,#f2c14e,#d99a2b);color:#2a1a05;border-color:#f6d98a;font-weight:700;text-align:center}
+.btn.go:hover:not(:disabled){background:linear-gradient(180deg,#ffd266,#e5a52f);border-color:#fff1c2}
+.btn small{display:block;color:var(--dim);font-size:14px;font-weight:400;margin-top:1px}
+.btn.go small{color:#5b3d10}
+.btn .c{float:right;color:var(--gold);font-weight:700}
+.btn .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:0}
+.drow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #ffffff0d;padding:7px 2px}
+.drow:hover{background:#ffffff08}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor}
+.drow .n{flex:1;min-width:0}
+.drow .n small{display:block;color:var(--dim);font-size:14px}
+.drow .r{color:var(--gold);font-weight:700}
+.tag{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border:1px solid currentColor;border-radius:3px;padding:0 6px;margin-left:6px;vertical-align:2px}
+.warn{color:var(--blood)}
+.fine{font-size:14px;color:var(--dim)}
+.link{background:none;border:0;color:var(--dim);text-decoration:underline;padding:0;margin-top:14px;font-size:14px}
+
+#toasts{position:fixed;left:var(--pad-l);bottom:max(16px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;z-index:4;pointer-events:none;max-width:min(420px,calc(100% - 32px))}
+.toast{background:#150f12ee;border-left:3px solid var(--gold);padding:7px 12px;border-radius:3px;animation:in .25s ease-out;box-shadow:0 4px 18px #0009}
+.toast.bad{border-color:var(--blood)} .toast.rare{border-color:var(--viol)} .toast.good{border-color:var(--moss)}
+@keyframes in{from{transform:translateX(-12px);opacity:0}}
+.float{position:fixed;pointer-events:none;z-index:7;font-weight:700;font-size:20px;color:var(--gold);text-shadow:0 2px 6px #000,0 0 12px #000a;animation:rise 1.2s ease-out forwards;transform:translate(-50%,-50%)}
+.float.red{color:var(--blood)} .float.big{font-size:26px}
+@keyframes rise{to{transform:translate(-50%,-90px);opacity:0}}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:8;background:radial-gradient(ellipse at center,transparent 40%,#e0503fcc);opacity:0}
+#flash.on{animation:fl .8s ease-out}
+@keyframes fl{from{opacity:1}to{opacity:0}}
+#err{position:fixed;inset:0;display:none;place-items:center;text-align:center;padding:24px;background:var(--ink);z-index:20;font-size:18px}
+
+#panel .drow.on{border-left:3px solid var(--gold);background:#ffffff0c;padding-left:8px}
+.vlabel{position:fixed;z-index:3;transform:translate(-50%,-100%);pointer-events:none;text-align:center;font-size:15px;line-height:1.15;text-shadow:0 1px 5px #000,0 0 10px #000;color:var(--bone);white-space:nowrap}
+.vlabel small{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blood)}
+.vlabel.won small{color:var(--moss)}
+#decree{position:fixed;left:50%;top:32%;transform:translate(-50%,-50%);z-index:9;text-align:center;pointer-events:none;opacity:0;max-width:min(520px,calc(100% - 32px));padding:22px 28px;background:#150f12f2;border:1px solid var(--gold);border-radius:6px;box-shadow:0 0 60px #f2c14e55}
+#decree h2{font-family:var(--display);font-weight:400;font-size:32px;margin:0 0 8px;color:var(--gold)}
+#decree p{margin:0;color:var(--bone)}
+#decree.on{animation:decree 8s ease-in-out forwards}
+@keyframes decree{0%{opacity:0;transform:translate(-50%,-44%)}8%,85%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0}}
+@media (max-width:760px){
+  .brand{font-size:21px} .chip{min-width:0;padding:4px 9px 5px} .chip span{font-size:18px} .chip em{display:none}
+  .rank{margin-left:0;min-width:0;flex:1 1 100%}
+  .brand small{display:none}
+  #panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:42vh;border-radius:10px 10px 0 0;border-width:1px 0 0;padding:12px var(--pad-r) max(16px,env(safe-area-inset-bottom,0px)) var(--pad-l)}
+  #banner{top:auto;bottom:calc(42vh + 12px)}
+  #toasts{bottom:calc(42vh + 70px)}
+}
+@media (prefers-reduced-motion:reduce){#banner{animation:none}}
+</style>
+
+<canvas id="c" aria-label="Floating volcanic island with your dragon lair"></canvas>
+<header id="hud">
+  <div class="brand">Wyrmhold<small>Dragon tycoon</small></div>
+  <div class="chips">
+    <div class="chip gold"><b>Gold</b><span id="hGold">0</span><em id="hInc"></em></div>
+    <div class="chip meat" id="chipMeat"><b>Fed</b><span id="hMeat">0</span><em id="hMeatR"></em></div>
+    <div class="chip"><b>Dragons</b><span id="hDr">0</span><em id="hDrCap"></em></div>
+  </div>
+  <div class="rank"><b>Infamy</b><span id="hRank"></span><div class="bar"><i id="hRankBar"></i></div></div>
+</header>
+<div id="banner" hidden><strong id="bannerTxt"></strong><button class="btn go" id="bannerBtn" style="margin:0;width:auto;padding:6px 14px">Scorch</button></div>
+<aside id="panel" aria-live="polite"></aside>
+<div id="toasts"></div>
+<div id="flash"></div>
+<div id="decree"><h2>Dragon Emperor</h2><p>Every village bows to you. The kingdom has noticed, and its royal armies are marching.</p></div>
+<div id="err"><div>This game needs WebGL, which your browser did not provide.<br><span class="fine">Try a current version of Chrome, Edge, Firefox or Safari.</span></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const lerp=(a,b,t)=>a+(b-a)*t;
+function fmt(n){n=Math.floor(n);if(n<10000)return n.toLocaleString('en-US');const u=['','k','M','B','T','Q'];let i=0,v=n;while(v>=1000&&i<5){v/=1000;i++}return (v<10?v.toFixed(2):v<100?v.toFixed(1):v.toFixed(0))+u[i]}
+const f1=n=>n.toFixed(1);
+
+/* ------------------------------------------------------------------ data */
+const GRID=7,MID=3,TILE=2.4,HOARD=GRID*MID+MID;
+const SPECIES=[
+  {id:'ember',n:'Ember',m:1,  w:30, g:0,  col:0xc8402a,belly:0xf0a04b,glow:0xff5a1f,css:'#ff6a2b'},
+  {id:'frost',n:'Frost',m:1.5,w:14, g:.3, col:0x58b4d6,belly:0xe2f6ff,glow:0x6cc7e6,css:'#6cc7e6'},
+  {id:'storm',n:'Storm',m:2.4,w:6,  g:.6, col:0xe2b72c,belly:0xfff1a8,glow:0xffd84a,css:'#f2c14e'},
+  {id:'void', n:'Void', m:4,  w:1.5,g:1,  col:0x5a2c8c,belly:0xb88cff,glow:0x9a5cff,css:'#b08cff'},
+  {id:'moss', n:'Moss', m:1.2,w:24, g:0,  col:0x4f8f47,belly:0xc5d98a,glow:0x8cc06c,css:'#8cc06c',feat:'horns'},
+  {id:'dune', n:'Dune', m:1.3,w:18, g:0,  col:0xc99a5a,belly:0xf0dcae,glow:0xe0b070,css:'#e0b070',feat:'spines'},
+  {id:'tide', n:'Tide', m:1.9,w:9,  g:.3, col:0x2a6fb0,belly:0x9fd6e8,glow:0x3fa0e0,css:'#4a9fe0',feat:'fins'},
+  {id:'crystal',n:'Crystal',m:3,w:3,g:.8, col:0xd470b8,belly:0xffd6f2,glow:0xff7ad8,css:'#ff7ad8',feat:'crystal',eye:0xffffff},
+  {id:'bone', n:'Bone', m:5,  w:1,  g:1.2,col:0xd9d0bb,belly:0x8c8272,glow:0xffffff,css:'#e6dcc4',feat:'horns',eye:0x7dffb0},
+  {id:'eclipse',n:'Eclipse',m:7,w:.4,g:1.5,col:0x1c1722,belly:0x3a2f4a,glow:0xf2c14e,css:'#f2c14e',feat:'crystal',eye:0xffc84a}
+];
+const RARE=2.4;
+function odds(l){const w=SPECIES.map(x=>x.w*(1+(l-1)*x.g)),t=w.reduce((a,b)=>a+b,0);return w.map(x=>x/t*100)}
+const rareChance=l=>odds(l).reduce((a,o,i)=>a+(SPECIES[i].m>=RARE?o:0),0);
+const STAGES=[{n:'Hatchling',m:.5,eat:.8,s:.36,at:0},{n:'Drake',m:1.2,eat:1.5,s:.56,at:60},{n:'Elder',m:3,eat:2.5,s:.8,at:240}];
+const MAXLVL=5;
+const CORE=[];for(let r=MID-1;r<=MID+1;r++)for(let c=MID-1;c<=MID+1;c++)CORE.push(r*GRID+c);
+const STAGEPOW=[0,1.5,4];
+const VIL=[
+  {name:'Thistledown',   def:3,  loot:250,  trib:2,  unl:[2,10,14],ang:20, r:15.5},
+  {name:'Marrow Ford',   def:8,  loot:700,  trib:5,  unl:[22,1,3], ang:80, r:16},
+  {name:'Saltmere',      def:18, loot:1800, trib:12, unl:[21,23,5],ang:140,r:16.5},
+  {name:'Greywatch',     def:40, loot:5000, trib:30, unl:[9,15,19],ang:200,r:16},
+  {name:'Castle Valmont',def:90, loot:14000,trib:70, unl:[0,4,20], ang:260,r:16.5},
+  {name:'Crown Citadel', def:200,loot:40000,trib:160,unl:[24],     ang:320,r:17}
+];
+const vdef=i=>VIL[i].def*(S.vil[i].rebel?.6:1);
+const vloot=i=>Math.round(VIL[i].loot*(S.vil[i].rebel?.4:1));
+const pw=d=>SPECIES[d.sp].m*STAGEPOW[stageOf(d)];
+const winChance=(p,def)=>clamp((p/def-.35)/.9,.03,.98);
+const oddsLabel=p=>p<.25?'Hopeless':p<.55?'Risky':p<.85?'Likely':'Overwhelming';
+const BUILD={
+  roost:   {name:'Roost',     base:100,col:'#b0793f',desc:'Houses 2 dragons. Upgrades boost their gold.'},
+  hatchery:{name:'Hatchery',  base:200,col:'#c0503a',desc:'Incubates dragon eggs. Upgrades hatch faster and find rarer species.'},
+  pasture: {name:'Pasture',   base:60, col:'#8cc06c',desc:'Sheep to feed your dragons. Each pasture feeds 5 dragons, and upgrades add one more each.'},
+  mine:    {name:'Gold mine', base:140,col:'#a99bb8',desc:'Dwarf-free mining. Steady gold, no dragons needed.'},
+  treasury:{name:'Treasury',  base:350,col:'#f2c14e',desc:'Counting house that multiplies every coin you earn.'},
+  tower:   {name:'Watchtower',base:260,col:'#8a8f99',desc:'Archers shoot at knights before they reach the hoard.'}
+};
+const RANKS=[[0,'Cave Squatter'],[1500,'Village Pest'],[12000,"Baron's Bane"],[100000,'Terror of the Realm'],[1000000,'Dragon Emperor']];
+const NAMES_A=['Ash','Cinder','Vex','Orm','Skarn','Thrax','Nym','Brand','Kael','Zeph','Mor','Sable','Grim','Ily','Tor','Embra'];
+const NAMES_B=['ador','ith','ax','wyrm','aura','gar','ion','eth','ok','yss','aal','ine'];
+
+/* ------------------------------------------------------------------ state */
+const KEY='wyrmhold-v1';
+let uid=1;
+function freshState(){
+  const s={gold:180,meat:60,total:0,eggs:0,kills:0,t:0,knightIn:75,ts:Date.now(),
+    tiles:Array(GRID*GRID).fill(null),dragons:[],vil:VIL.map(()=>({won:false,cd:0})),raids:[],land:[]};
+  const R0=(MID-1)*GRID+MID-1;
+  s.tiles[R0]={type:'roost',lvl:1};
+  s.tiles[R0+2]={type:'pasture',lvl:1};
+  s.dragons.push({id:uid++,name:'Cinder',sp:0,age:20,roost:R0});s.seen=[0];
+  return s;
+}
+let S;
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);if(o&&o.tiles&&(o.tiles.length===25||o.tiles.length===GRID*GRID)&&Array.isArray(o.dragons)){S=o;uid=1+Math.max(0,...S.dragons.map(d=>d.id))}}}catch(e){}
+if(!S)S=freshState();
+if(!S.seen)S.seen=[...new Set(S.dragons.map(d=>d.sp))];
+if(!S.vil||S.vil.length!==VIL.length)S.vil=VIL.map(()=>({won:false,cd:0}));
+if(!S.raids)S.raids=[];
+if(!S.land){S.land=[];S.vil.forEach((v,k)=>{if(v.won)S.land.push(...VIL[k].unl)})}
+if(S.tiles.length===25){// older saves used a 5x5 grid; move them into the middle of the 7x7 one
+  const m5=i=>(Math.floor(i/5)+1)*GRID+(i%5)+1,nt=Array(GRID*GRID).fill(null);
+  S.tiles.forEach((t,i)=>{if(t)nt[m5(i)]=t});S.tiles=nt;S.dragons.forEach(d=>{d.roost=m5(d.roost)});S.land=S.land.map(m5)}
+function save(){S.ts=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ------------------------------------------------------------------ economy */
+const stageOf=d=>d.age<STAGES[1].at?0:d.age<STAGES[2].at?1:2;
+const lvlSum=t=>S.tiles.reduce((a,x)=>a+(x&&x.type===t?x.lvl:0),0);
+const count=t=>S.tiles.filter(x=>x&&x.type===t).length;
+const hatchTime=l=>Math.round(22/(1+.25*(l-1)));
+const treasuryMult=()=>1+.15*lvlSum('treasury');
+const feedCap=()=>S.tiles.reduce((a,t)=>a+(t&&t.type==='pasture'?4+t.lvl:0),0);
+const eggCost=()=>Math.round(80*Math.pow(1.45,S.dragons.length+eggsInProgress()));
+const eggsInProgress=()=>S.tiles.filter(x=>x&&x.egg).length;
+const roostIdx=()=>S.tiles.map((t,i)=>t&&t.type==='roost'?i:-1).filter(i=>i>=0);
+const freeSlots=()=>roostIdx().length*2-S.dragons.length-eggsInProgress();
+const buildCost=t=>Math.round(BUILD[t].base*Math.pow(1.35,count(t)));
+const upCost=(t,l)=>Math.round(BUILD[t].base*Math.pow(1.8,l));
+const raidOf=id=>S.raids.find(r=>r.ids.includes(id));
+const LAND_ORDER=Array.from({length:GRID*GRID},(_,i)=>i).filter(i=>!CORE.includes(i)).sort((a,b)=>{const d=i=>Math.hypot(i%GRID-MID,Math.floor(i/GRID)-MID);return d(a)-d(b)||a-b});
+const isOpen=i=>CORE.includes(i)||!!S.tiles[i]||S.land.includes(i);
+// Each village captured grants one more plot than the last: 1, then 2, then 3, and so on (limited by the land left).
+const landGain=()=>Math.min(LAND_ORDER.filter(i=>!isOpen(i)).length,S.vil.filter(v=>v.won).length+1);
+function rankIdx(){let r=0;RANKS.forEach((x,i)=>{if(S.total>=x[0])r=i});return r}
+function calc(){
+  const tm=treasuryMult();let gold=0,eat=0,ix=0;const cap=feedCap(),fedIds=new Set(),fed=1;
+  const per=new Map();
+  for(const d of S.dragons){
+    const st=STAGES[stageOf(d)];const rt=S.tiles[d.roost];const rl=rt?rt.lvl:1;
+    const ok=ix++<cap;if(ok)fedIds.add(d.id);const fed=ok?1:.35;const busy=d.hurt>0||raidOf(d.id);const inc=busy?0:4*SPECIES[d.sp].m*st.m*(1+.25*(rl-1))*tm*fed;
+    per.set(d.id,inc);gold+=inc;eat+=st.eat;
+  }
+  let mineG=0,meatIn=0;
+  for(const t of S.tiles){if(!t)continue;if(t.type==='mine')mineG+=4*t.lvl*tm;if(t.type==='pasture')meatIn+=2.2*t.lvl}
+  let trib=0;S.vil.forEach((v,i)=>{if(v.won&&!v.rebel)trib+=VIL[i].trib*tm});
+  return{gold:gold+mineG+trib,dragonGold:gold,mine:mineG,trib,cap,fedIds,per};
+}
+function away(sec){
+  sec=Math.min(sec,3600);const r=calc();const g=r.gold*sec*.5;
+  S.gold+=g;S.total+=g;S.dragons.forEach(d=>{d.age+=sec*.4;if(d.hurt>0)d.hurt=Math.max(0,d.hurt-sec)});S.vil.forEach(v=>{if(v.cd>0)v.cd=Math.max(0,v.cd-sec)});S.raids.forEach(r=>r.t+=Math.min(sec,r.dur));
+  if(sec>25&&g>1)toast(`Welcome back. Your hoard grew by ${fmt(g)} gold while you were away.`,'good');
+}
+
+/* ------------------------------------------------------------------ three.js scene */
+let renderer;
+const cv=$('#c');
+try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'})}catch(e){$('#err').style.display='grid';return}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+const bgc=document.createElement('canvas');bgc.width=2;bgc.height=256;
+{const x=bgc.getContext('2d');const g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#0d0a1c');g.addColorStop(.5,'#2e1230');g.addColorStop(.82,'#6a2a2a');g.addColorStop(1,'#a8472a');x.fillStyle=g;x.fillRect(0,0,2,256)}
+const bgTex=new THREE.CanvasTexture(bgc);bgTex.encoding=THREE.sRGBEncoding;scene.background=bgTex;
+scene.fog=new THREE.FogExp2(0x24101c,.0085);
+const FOV=42,camera=new THREE.PerspectiveCamera(FOV,1,.1,400);
+
+scene.add(new THREE.HemisphereLight(0x8a76b0,0x3a1810,.5));
+const sun=new THREE.DirectionalLight(0xffd9b0,.95);sun.position.set(9,16,7);sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-14,right:14,top:14,bottom:-14,near:1,far:50});sun.shadow.bias=-.0006;
+scene.add(sun);
+const lavaLight=new THREE.PointLight(0xff5a1f,2.4,46);lavaLight.position.set(0,-6,0);scene.add(lavaLight);
+const hoardLight=new THREE.PointLight(0xffc24a,1.2,10);hoardLight.position.set(0,2,0);scene.add(hoardLight);
+
+const MATS={};
+function mat(c,o){const k=c+JSON.stringify(o||{});return MATS[k]||(MATS[k]=new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.85,metalness:.04,flatShading:true},o||{})))}
+function mesh(g,m,x=0,y=0,z=0){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;return o}
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=mulberry(11);
+const tilePos=i=>new THREE.Vector3(((i%GRID)-MID)*TILE,0,(Math.floor(i/GRID)-MID)*TILE);
+const shade=(c,k)=>new THREE.Color(c).multiplyScalar(k).getHex();
+
+/* --- island */
+const island=new THREE.Group();scene.add(island);
+const tileMeshes=[];
+const isl={cur:6.6,target:6.6};
+// The island grows with your land: its radius always reaches past the farthest claimed plot.
+function refreshLand(snap){
+  let far=0;
+  tileMeshes.forEach((m,i)=>{const o=isOpen(i);m.visible=o;if(o){const p=tilePos(i);far=Math.max(far,Math.hypot(Math.abs(p.x)+TILE/2,Math.abs(p.z)+TILE/2))}});
+  isl.target=Math.max(6.4,far+1.5);if(snap)isl.cur=isl.target;
+}
+{
+  const top=mesh(new THREE.CylinderGeometry(9.8,10,1,16,1),mat(0x2e262d),0,-.5,0);top.castShadow=false;island.add(top);
+  const rg=new THREE.ConeGeometry(10,12,16,5);rg.rotateX(Math.PI);
+  const pa=rg.attributes.position;
+  for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i),z=pa.getZ(i);if(y>5.9)continue;
+    const n=Math.sin(x*1.3+y*2.1)*Math.cos(z*1.7+y*1.3);const k=1+n*.16;pa.setX(i,x*k);pa.setZ(i,z*k);pa.setY(i,y+n*.9)}
+  rg.computeVertexNormals();
+  const rock=mesh(rg,mat(0x2c2228),0,-7,0);rock.castShadow=false;island.add(rock);
+  const lavaM=new THREE.MeshBasicMaterial({color:0xff6a2b});
+  for(let k=0;k<16;k++){const a=R()*Math.PI*2,t=1.5+R()*8,r=10*(1-t/12)+.12;
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.14+R()*.14,1+R()*1.8,.14),lavaM);b.position.set(Math.cos(a)*r,-1-t,Math.sin(a)*r);b.rotation.y=-a;island.add(b)}
+  const core=new THREE.Mesh(new THREE.SphereGeometry(3.2,16,12),lavaM);core.position.y=-11;island.add(core);
+  // tiles
+  for(let i=0;i<GRID*GRID;i++){const p=tilePos(i);const alt=((i%GRID)+Math.floor(i/GRID))%2;
+    const m=mesh(new THREE.BoxGeometry(TILE-.1,.14,TILE-.1),mat(alt?0x41373f:0x3a313a),p.x,.07,p.z);m.castShadow=false;m.userData.alt=alt;tileMeshes[i]=m;scene.add(m)}
+  // rim dressing
+  const rockM=mat(0x4a4048);
+  for(let k=0;k<22;k++){const a=R()*Math.PI*2,r=7.4+R()*2;const s=.2+R()*.5;
+    const o=mesh(new THREE.DodecahedronGeometry(s,0),rockM,Math.cos(a)*r,s*.4,Math.sin(a)*r);o.rotation.set(R()*3,R()*3,R()*3);island.add(o)}
+  const wood=mat(0x2a1d1a);
+  for(let k=0;k<7;k++){const a=R()*Math.PI*2,r=7.7+R()*1.4;const h=1+R()*1.2;
+    const g=new THREE.Group();g.add(mesh(new THREE.CylinderGeometry(.06,.12,h,5),wood,0,h/2,0));
+    for(let j=0;j<3;j++){const b=mesh(new THREE.CylinderGeometry(.02,.05,.7,4),wood,0,h*(.5+j*.17),0);b.rotation.z=(j%2?1:-1)*(.8+R()*.4);b.rotation.y=R()*6;b.position.x=(j%2?.2:-.2);g.add(b)}
+    g.position.set(Math.cos(a)*r,0,Math.sin(a)*r);island.add(g)}
+  const bone=mat(0xd8cdb5);
+  for(let k=0;k<5;k++){const a=R()*Math.PI*2,r=7+R()*2.4;const b=mesh(new THREE.CylinderGeometry(.04,.04,.7,5),bone,Math.cos(a)*r,.08,Math.sin(a)*r);b.rotation.set(Math.PI/2,0,R()*3);island.add(b)}
+}
+/* --- far scenery */
+{
+  const moon=new THREE.Mesh(new THREE.SphereGeometry(7,28,18),new THREE.MeshBasicMaterial({color:0xf3e3c0,fog:false}));moon.position.set(-70,46,-110);scene.add(moon);
+  const sp=[];for(let i=0;i<500;i++){const u=Math.random()*Math.PI*2,v=Math.random()*1.2+.05,r=180;sp.push(Math.cos(u)*Math.cos(v)*r,Math.sin(v)*r*.9+10,Math.sin(u)*Math.cos(v)*r)}
+  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xfff2dd,size:1.3,sizeAttenuation:false,fog:false,transparent:true,opacity:.8})));
+  const vol=mesh(new THREE.ConeGeometry(26,44,9,1,true),mat(0x2a1a24,{side:THREE.DoubleSide}),55,-14,-85);vol.castShadow=false;scene.add(vol);
+  const crater=new THREE.Mesh(new THREE.CylinderGeometry(7,7,1,9),new THREE.MeshBasicMaterial({color:0xff7a30,fog:false}));crater.position.set(55,8,-85);scene.add(crater);
+  const rl=new THREE.PointLight(0xff6a2b,1.4,60);rl.position.set(55,12,-80);scene.add(rl);
+  window.__bits=[];
+  for(let i=0;i<9;i++){const s=.7+Math.random()*1.8;const r=mesh(new THREE.IcosahedronGeometry(s,0),mat(0x33262c),0,0,0);
+    const a=Math.random()*Math.PI*2,d=28+Math.random()*18;r.position.set(Math.cos(a)*d,Math.random()*12-6,Math.sin(a)*d);r.userData={y:r.position.y,ph:Math.random()*6,sp:.2+Math.random()*.3};r.scale.y=.7;scene.add(r);window.__bits.push(r)}
+  const cm=new THREE.MeshBasicMaterial({color:0x4a2238,transparent:true,opacity:.42,depthWrite:false});
+  window.__clouds=[];
+  for(let i=0;i<9;i++){const c=new THREE.Mesh(new THREE.SphereGeometry(1,10,6),cm);c.scale.set(8+Math.random()*8,1.2,4+Math.random()*4);
+    const a=Math.random()*Math.PI*2,d=14+Math.random()*30;c.position.set(Math.cos(a)*d,-9-Math.random()*5,Math.sin(a)*d);c.userData={a,d,s:.01+Math.random()*.02,y:c.position.y};scene.add(c);window.__clouds.push(c)}
+}
+
+/* --- particles */
+const NP=1100;
+const pP=new Float32Array(NP*3),pC=new Float32Array(NP*3),pSz=new Float32Array(NP),pA=new Float32Array(NP);
+const pV=new Float32Array(NP*3),pL=new Float32Array(NP),pM=new Float32Array(NP),pS0=new Float32Array(NP),pG=new Float32Array(NP),pK=new Uint8Array(NP),pB=new Float32Array(NP*3);
+let pI=0;
+const pg=new THREE.BufferGeometry();
+pg.setAttribute('position',new THREE.BufferAttribute(pP,3));pg.setAttribute('aColor',new THREE.BufferAttribute(pC,3));
+pg.setAttribute('aSize',new THREE.BufferAttribute(pSz,1));pg.setAttribute('aAlpha',new THREE.BufferAttribute(pA,1));
+const pMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uScale:{value:500}},
+  vertexShader:'attribute vec3 aColor;attribute float aSize;attribute float aAlpha;varying vec3 vC;varying float vA;uniform float uScale;void main(){vC=aColor;vA=aAlpha;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aSize*uScale/max(.1,-mv.z);gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'varying vec3 vC;varying float vA;void main(){float d=length(gl_PointCoord-.5);float a=smoothstep(.5,.05,d)*vA;gl_FragColor=vec4(vC*a,a);}'});
+const points=new THREE.Points(pg,pMat);points.frustumCulled=false;scene.add(points);
+function spawn(x,y,z,vx,vy,vz,life,size,r,g,b,grav,kind){
+  const i=pI;pI=(pI+1)%NP;const i3=i*3;
+  pP[i3]=x;pP[i3+1]=y;pP[i3+2]=z;pV[i3]=vx;pV[i3+1]=vy;pV[i3+2]=vz;pB[i3]=r;pB[i3+1]=g;pB[i3+2]=b;
+  pL[i]=pM[i]=life;pS0[i]=size;pG[i]=grav;pK[i]=kind;
+}
+function burst(p,n,r,g,b,spd,size,life){for(let i=0;i<n;i++){const a=Math.random()*6.28,e=Math.random()*3.14-1.2;const s=rnd(.3,1)*spd;
+  spawn(p.x,p.y,p.z,Math.cos(a)*Math.cos(e)*s,Math.sin(e)*s+spd*.3,Math.sin(a)*Math.cos(e)*s,rnd(.5,1)*life,size,r,g,b,-3,0)}}
+function updParticles(dt){
+  if(Math.random()<dt*34){const a=Math.random()*6.28,r=Math.random()*11;spawn(Math.cos(a)*r,-8+Math.random()*7,Math.sin(a)*r,rnd(-.3,.3),rnd(.8,1.8),rnd(-.3,.3),rnd(5,9),.1,1,.45,.15,0,1)}
+  for(let i=0;i<NP;i++){
+    if(pL[i]<=0){pA[i]=0;continue}
+    pL[i]-=dt;const k=Math.max(0,pL[i]/pM[i]),i3=i*3;
+    pV[i3+1]+=pG[i]*dt;pP[i3]+=pV[i3]*dt;pP[i3+1]+=pV[i3+1]*dt;pP[i3+2]+=pV[i3+2]*dt;
+    if(pK[i]===0){pA[i]=Math.min(1,k*1.6);pSz[i]=pS0[i]*(.5+(1-k)*.9);const f=.35+.65*k;pC[i3]=pB[i3]*f;pC[i3+1]=pB[i3+1]*f*f;pC[i3+2]=pB[i3+2]*f*f}
+    else{pA[i]=Math.sin(k*3.14)*.8;pSz[i]=pS0[i];pC[i3]=pB[i3];pC[i3+1]=pB[i3+1];pC[i3+2]=pB[i3+2]}
+  }
+  pg.attributes.position.needsUpdate=pg.attributes.aColor.needsUpdate=pg.attributes.aSize.needsUpdate=pg.attributes.aAlpha.needsUpdate=true;
+}
+
+/* --- buildings */
+function makeBuilding(type,lvl,tile){
+  const g=new THREE.Group();const M=mat;
+  if(type==='roost'){
+    g.add(mesh(new THREE.CylinderGeometry(.95,1.05,.25,10),M(0x6e5e57),0,.2,0));
+    const ring=mesh(new THREE.TorusGeometry(.78,.17,6,12),M(0x7a4f2a),0,.42,0);ring.rotation.x=Math.PI/2;g.add(ring);
+    g.add(mesh(new THREE.CylinderGeometry(.72,.72,.1,10),M(0xb68a4a),0,.36,0));
+    for(let l=0;l<lvl-1;l++){const a=l/(MAXLVL-1)*Math.PI*2+.4;
+      g.add(mesh(new THREE.BoxGeometry(.14,.9+l*.12,.14),M(0x6e5e57),Math.cos(a)*.98,.55,Math.sin(a)*.98));
+      g.add(mesh(new THREE.OctahedronGeometry(.1),M(0xff7a30,{emissive:0xff5a1f,emissiveIntensity:.9}),Math.cos(a)*.98,1.1+l*.12,Math.sin(a)*.98))}
+  }else if(type==='hatchery'){
+    g.add(mesh(new THREE.CylinderGeometry(1.0,1.05,.2,8),M(0x8c7f72),0,.2,0));
+    for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;g.add(mesh(new THREE.CylinderGeometry(.07,.09,1.1,6),M(0xcdbf9f),Math.cos(a)*.85,.85,Math.sin(a)*.85))}
+    g.add(mesh(new THREE.ConeGeometry(1.35,.7,6),M(0x8f3b2e),0,1.75,0));
+    g.add(mesh(new THREE.CylinderGeometry(.22,.3,.45,8),M(0x9d9183),0,.5,0));
+    const egg=mesh(new THREE.SphereGeometry(.26,10,8),M(0xeadfc4,{emissive:0xff8a3a,emissiveIntensity:.5}),0,.98,0);egg.scale.y=1.3;egg.name='egg';egg.visible=false;g.add(egg);
+    for(let l=0;l<lvl;l++){const a=l*1.25+.3;g.add(mesh(new THREE.SphereGeometry(.07,6,5),new THREE.MeshBasicMaterial({color:0xffa54a}),Math.cos(a)*1.0,.38,Math.sin(a)*1.0))}
+  }else if(type==='pasture'){
+    g.add(mesh(new THREE.BoxGeometry(TILE-.5,.08,TILE-.5),M(0x4f7d3a),0,.12,0));
+    const w=M(0x7a5a38),h=(TILE-.5)/2;
+    for(let k=-4;k<=4;k++){const t=k/4*h;[[t,-h],[t,h],[-h,t],[h,t]].forEach(p=>g.add(mesh(new THREE.BoxGeometry(.07,.36,.07),w,p[0],.3,p[1])))}
+    [[0,-h],[0,h]].forEach(p=>g.add(mesh(new THREE.BoxGeometry(TILE-.5,.05,.04),w,p[0],.38,p[1])));
+    [[-h,0],[h,0]].forEach(p=>g.add(mesh(new THREE.BoxGeometry(.04,.05,TILE-.5),w,p[0],.38,p[1])));
+    g.add(mesh(new THREE.BoxGeometry(.4,.28,.3),M(0xc9a24a),-.6,.3,-.6));
+    const n=Math.min(2+lvl,6),spots=[[.1,.1],[.55,-.35],[-.4,.4],[.5,.5],[-.6,-.1],[.1,-.6]];
+    for(let k=0;k<n;k++){const s=new THREE.Group();s.add(mesh(new THREE.SphereGeometry(.2,7,6),M(0xf1ece0),0,.36,0));s.add(mesh(new THREE.SphereGeometry(.09,6,5),M(0x2a2326),.19,.38,0));
+      s.position.set(spots[k][0],0,spots[k][1]);s.rotation.y=k*1.7;s.userData.sheep=k;g.add(s)}
+  }else if(type==='mine'){
+    const m=mesh(new THREE.ConeGeometry(1.0,1.5,6),M(0x4e4756),0,.85,0);m.rotation.y=.3;g.add(m);
+    g.add(mesh(new THREE.BoxGeometry(.55,.55,.2),M(0x0c090b),0,.4,.82));
+    [-.34,.34].forEach(x=>g.add(mesh(new THREE.BoxGeometry(.08,.62,.1),M(0x7a5a38),x,.42,.9)));
+    g.add(mesh(new THREE.BoxGeometry(.8,.08,.1),M(0x7a5a38),0,.74,.9));
+    const gold=M(0xf2c14e,{emissive:0x7a4a00,emissiveIntensity:.6,metalness:.5,roughness:.4});
+    for(let k=0;k<2+lvl;k++){const a=k*1.3+.5;g.add(mesh(new THREE.IcosahedronGeometry(.1+.03*(k%2),0),gold,Math.cos(a)*.7+.2,.55+(k%3)*.18,Math.sin(a)*.5-.1))}
+    const cart=new THREE.Group();cart.add(mesh(new THREE.BoxGeometry(.45,.22,.3),M(0x7a5a38),0,.3,0));cart.add(mesh(new THREE.SphereGeometry(.14,6,5),gold,0,.46,0));
+    [-.15,.15].forEach(x=>[-.17,.17].forEach(z=>{const w=mesh(new THREE.CylinderGeometry(.07,.07,.04,8),M(0x2a2326),x,.15,z);w.rotation.x=Math.PI/2;cart.add(w)}));
+    cart.position.set(.75,0,.55);cart.rotation.y=-.5;g.add(cart);
+  }else if(type==='treasury'){
+    g.add(mesh(new THREE.BoxGeometry(1.7,.2,1.4),M(0xa89a82),0,.2,0));
+    g.add(mesh(new THREE.BoxGeometry(1.4,.8,1.05),M(0xd0bc92),0,.7,0));
+    for(let k=-2;k<=2;k++)g.add(mesh(new THREE.CylinderGeometry(.07,.08,.8,6),M(0xefe3c4),k*.3,.7,.6));
+    const ped=mesh(new THREE.ConeGeometry(.82,.36,3),M(0xf2c14e,{metalness:.5,roughness:.4,emissive:0x4a3200,emissiveIntensity:.5}),0,1.3,.1);ped.rotation.y=Math.PI/2;ped.scale.set(1.15,1,.7);ped.rotation.x=0;g.add(ped);
+    const gold=M(0xf2c14e,{emissive:0x6a4200,emissiveIntensity:.7,metalness:.6,roughness:.35});
+    for(let k=0;k<lvl+1;k++){const s=new THREE.Group();for(let j=0;j<=k%3+1;j++)s.add(mesh(new THREE.CylinderGeometry(.14,.14,.05,8),gold,0,.07+j*.055,0));s.position.set(-.85+k*.05,.2,-.1+k*.26-.4);s.position.x=-1.0;g.add(s)}
+  }else if(type==='tower'){
+    const h=1.9+.3*lvl;
+    g.add(mesh(new THREE.CylinderGeometry(.46,.58,h,8),M(0x8a8f99),0,h/2+.1,0));
+    g.add(mesh(new THREE.CylinderGeometry(.68,.62,.22,8),M(0x777c86),0,h+.2,0));
+    for(let k=0;k<8;k++){const a=k*Math.PI/4;const c=mesh(new THREE.BoxGeometry(.2,.2,.14),M(0x777c86),Math.cos(a)*.66,h+.42,Math.sin(a)*.66);c.rotation.y=-a+Math.PI/2;g.add(c)}
+    g.add(mesh(new THREE.ConeGeometry(.5,.7,8),M(0x7a2f2f),0,h+.75,0));
+    g.add(mesh(new THREE.CylinderGeometry(.015,.015,.6,4),M(0x2a2326),0,h+1.4,0));
+    const fl=mesh(new THREE.PlaneGeometry(.4,.24),new THREE.MeshStandardMaterial({color:0xd6453a,side:THREE.DoubleSide}),.2,h+1.55,0);fl.name='flag';g.add(fl);
+    for(let k=0;k<lvl;k++)g.add(mesh(new THREE.BoxGeometry(.1,.2,.06),M(0x0c090b),0,.7+k*.35,.52));
+  }
+  g.userData={type,lvl,pop:0};g.scale.setScalar(.01);
+  return g;
+}
+
+/* --- villages */
+const vilObjs=[];
+const CH_W=mat(0x2b2422),CH_R=mat(0x1c1618);
+function buildVillages(){
+  VIL.forEach((v,i)=>{
+    const rr=mulberry(300+i*17),g=new THREE.Group(),a=v.ang*Math.PI/180;
+    g.position.set(Math.cos(a)*v.r,-1.2,Math.sin(a)*v.r);
+    const top=mesh(new THREE.CylinderGeometry(3.4,3.6,.7,12),mat(0x34442c),0,-.35,0);top.castShadow=false;g.add(top);
+    const rg=new THREE.ConeGeometry(3.6,5,12,3);rg.rotateX(Math.PI);const pa=rg.attributes.position;
+    for(let k=0;k<pa.count;k++){const x=pa.getX(k),y=pa.getY(k),z=pa.getZ(k);if(y>2.4)continue;const n=Math.sin(x*1.9+y*2.3)*Math.cos(z*1.6+y*1.1);pa.setX(k,x*(1+n*.15));pa.setZ(k,z*(1+n*.15));pa.setY(k,y+n*.4)}
+    rg.computeVertexNormals();const rk=mesh(rg,mat(0x2a2128),0,-3.2,0);rk.castShadow=false;g.add(rk);
+    const houses=[],hp=[],n=4+i;
+    for(let k=0;k<n;k++){const ang=k/n*6.283+rr()*.5,rad=1.4+rr()*1.2,w=.6+rr()*.35,h=.45+rr()*.25;
+      const hg=new THREE.Group(),wall=mesh(new THREE.BoxGeometry(w,h,w),mat(k%2?0xcdb892:0xb89f78),0,h/2,0);
+      const roof=mesh(new THREE.ConeGeometry(w*.78,.5,4),mat(k%3?0x8a3b2e:0x6b4a2a),0,h+.25,0);roof.rotation.y=Math.PI/4;
+      hg.add(wall,roof);hg.position.set(Math.cos(ang)*rad,0,Math.sin(ang)*rad);hg.rotation.y=rr()*3;g.add(hg);
+      houses.push({wall,roof,wm:wall.material,rm:roof.material});hp.push(hg.position.clone())}
+    if(i>=3){const wall=mesh(new THREE.BoxGeometry(1.2,1.5,1.2),mat(0x7a7f88),0,.75,0),roof=mesh(new THREE.ConeGeometry(.95,.7,4),mat(0x5a2f3a),0,1.85,0);roof.rotation.y=Math.PI/4;g.add(wall,roof);
+      houses.push({wall,roof,wm:wall.material,rm:roof.material});hp.push(new THREE.Vector3(0,0,0))}
+    if(i>=1)for(let k=0;k<22;k++){const q=k/22*6.283;g.add(mesh(new THREE.CylinderGeometry(.05,.06,.7,5),mat(0x6a4a2a),Math.cos(q)*3.1,.3,Math.sin(q)*3.1))}
+    else for(let k=0;k<4;k++){const q=k*1.6+.4;g.add(mesh(new THREE.ConeGeometry(.3,.9,6),mat(0x2f5a35),Math.cos(q)*2.9,.45,Math.sin(q)*2.9))}
+    const flag=new THREE.Group();flag.add(mesh(new THREE.CylinderGeometry(.03,.03,1.8,5),mat(0x2a2326),0,.9,0));
+    flag.add(mesh(new THREE.PlaneGeometry(.7,.45),new THREE.MeshStandardMaterial({color:0xd6453a,side:THREE.DoubleSide,emissive:0x5a1208}),.38,1.55,0));
+    flag.position.y=i>=3?2.1:0;flag.visible=false;g.add(flag);
+    const hit=new THREE.Mesh(new THREE.SphereGeometry(3.8,8,6),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=1;hit.userData.vil=i;g.add(hit);
+    const label=document.createElement('div');label.className='vlabel';document.body.appendChild(label);
+    scene.add(g);vilObjs.push({g,houses,hp,flag,hit,label});refreshVillage(i);
+  });
+}
+function refreshVillage(i){
+  const vo=vilObjs[i],st=S.vil[i],won=st.won;
+  vo.houses.forEach(h=>{h.wall.material=won?CH_W:h.wm;h.roof.material=won?CH_R:h.rm});vo.flag.visible=won&&!st.rebel;
+  vo.label.className='vlabel'+(won&&!st.rebel?' won':'');vo.label.innerHTML=`${VIL[i].name}<small>${st.rebel?'Rebelling':won?'Conquered':'Defense '+VIL[i].def}</small>`;
+}
+const _lp=new THREE.Vector3();
+function updLabels(){vilObjs.forEach(vo=>{_lp.set(vo.g.position.x,vo.g.position.y+3.4,vo.g.position.z).project(camera);const el=vo.label;
+  if(_lp.z>1||Math.abs(_lp.x)>1.05||Math.abs(_lp.y)>1.05){el.style.display='none';return}
+  el.style.display='';el.style.left=((_lp.x+1)/2*innerWidth)+'px';el.style.top=((1-_lp.y)/2*innerHeight)+'px'})}
+
+/* --- hoard */
+const hoard=new THREE.Group();scene.add(hoard);hoard.position.copy(tilePos(HOARD));
+const hoardGoldM=mat(0xf2c14e,{emissive:0x7a4a00,emissiveIntensity:.8,metalness:.6,roughness:.35});
+{
+  hoard.add(mesh(new THREE.CylinderGeometry(1.05,1.1,.12,12),mat(0x5a4a40),0,.2,0));
+  const pile=mesh(new THREE.ConeGeometry(.95,1,10),hoardGoldM,0,.7,0);pile.name='pile';hoard.add(pile);
+  const gems=[0xe0503f,0x6cc7e6,0x8cc06c,0xb08cff];
+  for(let k=0;k<30;k++){const a=R()*6.28,r=R()*.8,y=.78-r*.8+R()*.1;const c=mesh(new THREE.CylinderGeometry(.11,.11,.03,8),hoardGoldM,Math.cos(a)*r,y,Math.sin(a)*r);c.rotation.set(R()*3,0,R()*3);hoard.add(c)}
+  for(let k=0;k<8;k++){const a=R()*6.28,r=.2+R()*.6;hoard.add(mesh(new THREE.OctahedronGeometry(.1),mat(gems[k%4],{emissive:gems[k%4],emissiveIntensity:.6}),Math.cos(a)*r,.75-r*.7,Math.sin(a)*r))}
+}
+let hoardScale=1;
+
+/* --- tiles: pick boxes, building groups, highlights */
+const tileGroups=Array(GRID*GRID).fill(null);
+const pickTiles=[];
+for(let i=0;i<GRID*GRID;i++){const p=tilePos(i);const m=new THREE.Mesh(new THREE.BoxGeometry(TILE,2.4,TILE),new THREE.MeshBasicMaterial({visible:false}));m.position.set(p.x,1.2,p.z);m.userData.tile=i;scene.add(m);pickTiles.push(m)}
+function placeTile(i,animate){
+  if(tileGroups[i]){scene.remove(tileGroups[i]);tileGroups[i]=null}
+  const t=S.tiles[i];if(!t||i===HOARD)return;
+  const g=makeBuilding(t.type,t.lvl,t);const p=tilePos(i);g.position.set(p.x,.14,p.z);g.rotation.y=(t.type==='mine'||t.type==='treasury')?0:0;
+  if(!animate){g.userData.pop=1;g.scale.setScalar(1)}
+  scene.add(g);tileGroups[i]=g;
+}
+function frameTex(c1,c2){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.shadowColor=c2;x.shadowBlur=14;x.strokeStyle=c1;x.lineWidth=5;
+  const L=22;[[14,14,1,1],[114,14,-1,1],[14,114,1,-1],[114,114,-1,-1]].forEach(a=>{x.beginPath();x.moveTo(a[0]+a[2]*L,a[1]);x.lineTo(a[0],a[1]);x.lineTo(a[0],a[1]+a[3]*L);x.stroke()});
+  const t=new THREE.CanvasTexture(c);return t}
+function frameMesh(tex){const m=new THREE.Mesh(new THREE.PlaneGeometry(TILE,TILE),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));m.rotation.x=-Math.PI/2;m.position.y=.17;m.visible=false;m.renderOrder=2;scene.add(m);return m}
+const selFrame=frameMesh(frameTex('#ffd36a','#ff9a30')),hovFrame=frameMesh(frameTex('#ffffff','#ffffff'));hovFrame.material.opacity=.5;
+
+/* --- dragons */
+function bone(a,b,r,m){const d=new THREE.Vector3().subVectors(b,a);const len=d.length();const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r*.75,len,5),m);
+  o.position.copy(a).add(b).multiplyScalar(.5);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());o.castShadow=true;return o}
+function makeWing(memM,boneM){
+  const w=new THREE.Group(),o=new THREE.Group();
+  const P=[[0,0,0],[1.5,.15,.15],[2.4,0,-.4],[2.0,0,-1.1],[1.3,0,-1.4],[.6,0,-1.0],[0,0,-.6]].map(a=>new THREE.Vector3(a[0],a[1],a[2]));
+  const surf=(tris,org)=>{const pos=[];tris.forEach(t=>t.forEach(v=>pos.push(v.x-org.x,v.y-org.y,v.z-org.z)));
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.computeVertexNormals();
+    const m=new THREE.Mesh(g,memM);m.castShadow=true;return m};
+  const Z=new THREE.Vector3();
+  w.add(surf([[P[0],P[1],P[4]],[P[0],P[4],P[5]],[P[0],P[5],P[6]]],Z));
+  w.add(bone(P[0],P[1],.07,boneM));w.add(bone(P[0],P[4],.03,boneM));
+  o.position.copy(P[1]);
+  o.add(surf([[P[1],P[2],P[3]],[P[1],P[3],P[4]]],P[1]));
+  o.add(bone(Z,P[2].clone().sub(P[1]),.045,boneM));o.add(bone(Z,P[3].clone().sub(P[1]),.03,boneM));
+  w.add(o);w.userData.outer=o;
+  return w;
+}
+// Two-joint flap: the shoulder drives the whole wing, the outer half trails behind so the tip whips instead of swinging rigidly.
+function flapWings(m,ph,amp,y,fold){
+  for(const w of [m.wr,m.wl]){
+    const sg=w===m.wl?-1:1;// the left wing is mirrored with scale.x=-1, so its root rotation about z and y must be negated to match the right wing
+    w.rotation.z=sg*(Math.sin(ph)*amp+.1);w.rotation.y=sg*y;w.rotation.x=Math.cos(ph)*amp*.12;
+    const o=w.userData.outer;o.rotation.z=Math.sin(ph-1)*amp*.95-.12;o.rotation.y=fold||0;
+  }
+}
+function makeDragon(spi){
+  const sp=SPECIES[spi];
+  const cM=mat(sp.col,{emissive:sp.glow,emissiveIntensity:.14}),dM=mat(shade(sp.col,.55)),bM=mat(sp.belly);
+  const memM=mat(shade(sp.col,.85),{side:THREE.DoubleSide,emissive:sp.glow,emissiveIntensity:.1});
+  const eyeM=new THREE.MeshBasicMaterial({color:sp.eye||0xfff2a0}),hornM=mat(0xe8dcc0);
+  const g=new THREE.Group();g.rotation.order='YXZ';const body=new THREE.Group();g.add(body);
+  const torso=mesh(new THREE.SphereGeometry(.5,12,9),cM);torso.scale.set(.8,.75,1.25);body.add(torso);
+  const belly=mesh(new THREE.SphereGeometry(.5,12,9),bM,0,-.13,.08);belly.scale.set(.62,.5,1.1);body.add(belly);
+  const n0=new THREE.Vector3(0,.2,.5),n1=new THREE.Vector3(0,.58,.95),n2=new THREE.Vector3(0,.82,1.18);
+  body.add(bone(n0,n1,.17,cM));body.add(bone(n1,n2,.14,cM));
+  body.add(mesh(new THREE.SphereGeometry(.17,8,6),cM,n1.x,n1.y,n1.z));
+  const head=new THREE.Group();head.position.set(0,.9,1.28);body.add(head);
+  head.add(mesh(new THREE.BoxGeometry(.38,.3,.44),cM));
+  head.add(mesh(new THREE.BoxGeometry(.26,.18,.36),cM,0,-.04,.36));
+  head.add(mesh(new THREE.BoxGeometry(.24,.06,.32),dM,0,-.15,.32));
+  [-.17,.17].forEach(x=>{const ey=new THREE.Mesh(new THREE.SphereGeometry(.05,6,5),eyeM);ey.position.set(x,.07,.13);head.add(ey);
+    const h=mesh(new THREE.ConeGeometry(.055,.4,5),hornM,x*.7,.2,-.12);h.rotation.x=-1.1;head.add(h);
+    head.add(mesh(new THREE.BoxGeometry(.03,.03,.03),dM,x*.35,.02,.55))});
+  const tail=[];const root=new THREE.Group();root.position.set(0,.05,-.55);body.add(root);let parent=root;
+  for(let i=0;i<7;i++){const r=.3*(1-i/7)+.05,len=.34;const sg=new THREE.Group();if(i>0)sg.position.z=-len;parent.add(sg);
+    const c=mesh(new THREE.ConeGeometry(r,len*1.2,6),i%2?cM:dM,0,0,-len/2);c.rotation.x=-Math.PI/2;sg.add(c);tail.push(sg);parent=sg;
+    if(i===6){const sp2=mesh(new THREE.ConeGeometry(.13,.3,4),dM,0,0,-len-.1);sp2.rotation.x=-Math.PI/2;sp2.scale.x=2.2;sg.add(sp2)}}
+  for(let k=0;k<5;k++){const s=mesh(new THREE.ConeGeometry(.06,.2,4),dM,0,.34+(k===0?0:0)-Math.abs(k-1.5)*.03,.45-k*.22);body.add(s)}
+  [[-.28,.38],[.28,.38],[-.28,-.28],[.28,-.28]].forEach(p=>{body.add(mesh(new THREE.CylinderGeometry(.08,.07,.4,5),dM,p[0],-.4,p[1]));body.add(mesh(new THREE.BoxGeometry(.14,.06,.2),dM,p[0],-.62,p[1]+.05))});
+  if(sp.feat==='horns'){[-1,1].forEach(x=>{const h=mesh(new THREE.ConeGeometry(.09,.7,5),hornM,x*.2,.3,-.05);h.rotation.set(-.7,0,-x*.35);head.add(h)})}
+  if(sp.feat==='fins'){[-1,1].forEach(x=>{const f=mesh(new THREE.ConeGeometry(.2,.5,3),memM,x*.24,.05,-.12);f.rotation.set(0,0,-x*1.3);f.scale.z=.25;head.add(f)});
+    for(let k=0;k<5;k++){const f=mesh(new THREE.ConeGeometry(.12,.34,3),memM,0,.42-Math.abs(k-2)*.03,.45-k*.22);f.scale.x=.2;body.add(f)}}
+  if(sp.feat==='spines'){for(let k=0;k<6;k++){const f=mesh(new THREE.ConeGeometry(.05,.5,4),hornM,(k%2?.12:-.12),.38,.5-k*.18);f.rotation.z=(k%2?-.5:.5);body.add(f)}}
+  if(sp.feat==='crystal'){const cm=new THREE.MeshStandardMaterial({color:sp.glow,emissive:sp.glow,emissiveIntensity:.9,flatShading:true});
+    for(let k=0;k<7;k++){const c=mesh(new THREE.OctahedronGeometry(.1+(k%3)*.03),cm,(k%2?.14:-.14),.42,.55-k*.17);c.scale.y=2;c.rotation.z=(k%2?-.3:.3);body.add(c)}
+    const hc=mesh(new THREE.OctahedronGeometry(.1),cm,0,.22,.0);hc.scale.y=2;head.add(hc)}
+  const wr=makeWing(memM,dM),wl=makeWing(memM,dM);wr.position.set(.3,.42,.2);wl.position.set(-.3,.42,.2);wl.scale.x=-1;body.add(wr,wl);
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(2.2,8,6),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=.4;g.add(hit);
+  return{g,body,head,tail,wr,wl,hit};
+}
+function raidFlight(D,d,rd,rp,t,dt){
+  const m=D.m,k=rd.t/rd.dur,vo=vilObjs[rd.v],idx=rd.ids.indexOf(d.id);
+  const S0=new THREE.Vector3(rp.x,4.2,rp.z),V=new THREE.Vector3(vo.g.position.x,3.6+Math.sin(t+D.ph)*.3,vo.g.position.z);
+  const pos=new THREE.Vector3(),fwd=new THREE.Vector3(),ease=u=>u*u*(3-2*u);
+  if(k<.3){const u=ease(clamp(k/.3,0,1));pos.lerpVectors(S0,V,u);pos.y+=Math.sin(u*Math.PI)*1.5;fwd.subVectors(V,S0)}
+  else if(k<.62){const a=t*.9+idx*2.1,rad=2.3*Math.min(1,(k-.3)/.05,(.62-k)/.05);pos.set(V.x+Math.cos(a)*rad,V.y,V.z+Math.sin(a)*rad);fwd.set(-Math.sin(a),0,Math.cos(a))}
+  else{const u=ease(clamp((k-.62)/.38,0,1));pos.lerpVectors(V,S0,u);pos.y+=Math.sin(u*Math.PI)*1.2;fwd.subVectors(S0,V)}
+  m.g.position.copy(pos);m.g.rotation.y=Math.atan2(fwd.x,fwd.z);m.g.rotation.z=(k>=.3&&k<.62)?-.3:0;m.g.rotation.x=0;
+  flapWings(m,t*7+D.ph,.65,.08);
+  if(k>=.3&&k<.62){const n=Math.ceil(dt*60);for(let j=0;j<n;j++){const h=vo.hp[(j+idx)%vo.hp.length];
+    m.head.getWorldPosition(_v);const dx=vo.g.position.x+h.x-_v.x,dy=vo.g.position.y+.4-_v.y,dz=vo.g.position.z+h.z-_v.z,L=Math.hypot(dx,dy,dz)||1,sp=11;
+    spawn(_v.x,_v.y,_v.z,dx/L*sp+rnd(-.6,.6),dy/L*sp+rnd(-.6,.6),dz/L*sp+rnd(-.6,.6),rnd(.3,.5),rnd(.5,.8),1,.82,.32,1,0)}}
+}
+const dragons=new Map();
+function syncDragons(){
+  for(const d of S.dragons){if(!dragons.has(d.id)){const m=makeDragon(d.sp);scene.add(m.g);
+    const a0=Math.random()*6.28;
+    const D={id:d.id,m,a:a0,w:(Math.random()<.5?-1:1)*rnd(.32,.5),r:rnd(2.4,4.6),h:rnd(3.6,5.2),ph:Math.random()*10,cur:STAGES[stageOf(d)].s,hop:0};
+    m.hit.userData.dragon=d.id;dragons.set(d.id,D)}}
+}
+function roostSlot(d){return S.dragons.filter(x=>x.roost===d.roost).findIndex(x=>x.id===d.id)}
+function animDragon(D,d,t,dt){
+  const m=D.m,st=stageOf(d),tgt=STAGES[st].s;D.cur=lerp(D.cur,tgt,Math.min(1,dt*2));m.g.scale.setScalar(D.cur);
+  const rp=tilePos(d.roost),rd=raidOf(d.id);
+  if(rd){raidFlight(D,d,rd,rp,t,dt)}else if(st>0&&!(d.hurt>0)){
+    D.a+=D.w*dt;const yaw=Math.atan2(-Math.sin(D.a)*D.w,Math.cos(D.a)*D.w);
+    const rad=D.r+Math.sin(t*.3+D.ph)*.5;
+    m.g.position.set(rp.x+Math.cos(D.a)*rad,D.h*(.8+.2*st)+Math.sin(t*1.1+D.ph)*.28,rp.z+Math.sin(D.a)*rad);
+    m.g.rotation.y=yaw;m.g.rotation.z=-Math.sign(D.w)*.32;m.g.rotation.x=Math.sin(t*2.2+D.ph)*.07;
+    const glide=.55+.45*Math.sin(t*.45+D.ph);
+    flapWings(m,t*(5+st)+D.ph,.7*glide+.06,.08);
+  }else{
+    const sl=roostSlot(d);const ox=sl===0?-.28:.28;
+    D.hop=Math.max(0,Math.sin(t*1.7+D.ph)*Math.sin(t*.53+D.ph*2));
+    m.g.position.set(rp.x+ox,.55+D.hop*.12,rp.z+(sl===0?.1:-.1));
+    m.g.rotation.y=Math.sin(t*.4+D.ph)*1.3+(sl?2.3:0.2);m.g.rotation.z=0;m.g.rotation.x=0;
+    flapWings(m,t*3+D.ph,.05,1.15,.9);
+  }
+  m.tail.forEach((s,i)=>{s.rotation.y=Math.sin(t*2.6-i*.55+D.ph)*.2;s.rotation.x=Math.sin(t*1.7-i*.4)*.05});
+  m.head.rotation.x=Math.sin(t*1.3+D.ph)*.08;
+}
+
+/* --- knights */
+const knights=[];
+function makeKnight(){
+  const g=new THREE.Group(),b=new THREE.Group();g.add(b);
+  b.add(mesh(new THREE.CylinderGeometry(.13,.17,.45,7),mat(0xa3342b),0,.45,0));
+  const l1=mesh(new THREE.BoxGeometry(.08,.3,.09),mat(0x3a3036),-.07,.15,0),l2=mesh(new THREE.BoxGeometry(.08,.3,.09),mat(0x3a3036),.07,.15,0);b.add(l1,l2);
+  b.add(mesh(new THREE.SphereGeometry(.12,8,6),mat(0xe2b894),0,.82,0));
+  b.add(mesh(new THREE.SphereGeometry(.145,8,6,0,6.283,0,1.9),mat(0xb9bfc7,{metalness:.6,roughness:.4}),0,.84,0));
+  b.add(mesh(new THREE.ConeGeometry(.04,.2,4),mat(0xd6453a),0,1.04,0));
+  b.add(mesh(new THREE.BoxGeometry(.04,.3,.22),mat(0x2b4a8a),-.2,.5,.04));
+  b.add(mesh(new THREE.CylinderGeometry(.014,.014,1.1,4),mat(0x7a5a38),.2,.62,0));
+  b.add(mesh(new THREE.ConeGeometry(.035,.14,4),mat(0xd0d4da,{metalness:.7}),.2,1.2,0));
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(.85,8,6),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=.5;g.add(hit);
+  g.scale.setScalar(1.15);return{g,b,l1,l2,hit};
+}
+function spawnKnights(army){
+  let n,caps=0;
+  if(army){const w=S.wave||1;n=Math.min(12,4+Math.floor(w*1.2));caps=1+Math.floor(w/4)}
+  else n=1+Math.floor(rankIdx()/2)+(Math.random()<.35?1:0);
+  const a=Math.random()*6.28,tot=n+caps;
+  for(let i=0;i<tot;i++){const cap=i<caps;const m=makeKnight();const aa=a+i*(army?.2:.28);
+    const rad=Math.max(5.5,isl.cur-.7)+(army?rnd(0,.8):0);
+    const sx=Math.cos(aa)*rad,sz=Math.sin(aa)*rad,hp=tilePos(HOARD);const ex=hp.x+Math.cos(aa)*1.35,ez=hp.z+Math.sin(aa)*1.35;
+    const len=Math.hypot(ex-sx,ez-sz);
+    const k={m,sx,sz,ex,ez,len,p:0,sp:cap?.27:rnd(army?.32:.3,army?.42:.38),dead:0,checked:false,ph:Math.random()*5,hp:cap?4:1,sc:cap?1.8:1.15,rwm:cap?5:1,steal:army?(cap?.1:.03):.08,army:!!army};
+    if(cap){const cr=mesh(new THREE.ConeGeometry(.12,.2,5),mat(0xf2c14e,{emissive:0x6a4200,emissiveIntensity:.6}),0,1.06,0);m.b.add(cr)}
+    m.g.scale.setScalar(k.sc);
+    m.g.position.set(sx,.14,sz);m.g.rotation.y=Math.atan2(ex-sx,ez-sz);m.hit.userData.knight=k;scene.add(m.g);knights.push(k)}
+  toast(army?`Royal army ${S.wave}: ${n} knights and ${caps} captain${caps>1?'s':''} march on your hoard!`:n>1?`${n} knights march on your hoard!`:'A knight marches on your hoard!','bad');
+}
+function hitKnight(b){const k=b.k;k.hp=(k.hp||1)-1;if(k.hp<=0)killKnight(k,b.rew,null);else{k.burning=false;const p=k.m.g.position;burst(new THREE.Vector3(p.x,p.y+.8,p.z),14,1,.5,.1,2.2,.3,.5);floatAt('Hit',p.clone().setY(2),'red')}}
+function killKnight(k,reward,why){
+  if(k.dead)return;k.dead=.001;const p=k.m.g.position;burst(new THREE.Vector3(p.x,p.y+.6,p.z),26,1,.6,.2,3.2,.35,.7);
+  S.kills++;
+  if(reward){S.gold+=reward;S.total+=reward;floatAt(`+${fmt(reward)}`,p.clone().setY(1.4),'big')}
+  if(why)toast(why,'good');
+}
+const breaths=[];
+function scorch(k){
+  if(!k||k.dead||k.burning)return;k.burning=true;
+  let best=null,bs=-1;for(const d of S.dragons){const D=dragons.get(d.id);const s=stageOf(d)*10+SPECIES[d.sp].m;if(D&&!raidOf(d.id)&&s>bs){bs=s;best=D}}
+  const rew=Math.round((15+calc().gold*6)*(k.rwm||1));
+  if(!best){killKnight(k,rew,`The knight flees from your fury. +${fmt(rew)} gold`);return}
+  breaths.push({D:best,k,t:0,dur:.55,hit:false,rew});
+}
+function nearestKnight(){let b=null,bd=1e9;const hp=tilePos(HOARD);for(const k of knights){if(k.dead||k.burning)continue;const d=Math.hypot(k.m.g.position.x-hp.x,k.m.g.position.z-hp.z);if(d<bd){bd=d;b=k}}return b}
+const _v=new THREE.Vector3(),_w=new THREE.Vector3();
+function updBreaths(dt){
+  for(let i=breaths.length-1;i>=0;i--){const b=breaths[i];b.t+=dt;
+    b.D.m.head.getWorldPosition(_v);_w.set(b.k.m.g.position.x,.7,b.k.m.g.position.z);
+    const dir=_w.clone().sub(_v);const dist=dir.length();dir.normalize();
+    const n=Math.ceil(dt*170);
+    for(let j=0;j<n;j++){const s=rnd(.8,1.15)*Math.max(10,dist/ .45);
+      spawn(_v.x,_v.y,_v.z,dir.x*s+rnd(-.8,.8),dir.y*s+rnd(-.8,.8),dir.z*s+rnd(-.8,.8),rnd(.28,.5),rnd(.5,.9),1,.82,.32,1,0)}
+    if(!b.hit&&b.t>b.dur*.8){b.hit=true;hitKnight(b)}
+    if(b.t>b.dur){breaths.splice(i,1)}
+  }
+}
+function updKnights(dt,t){
+  const towerChance=Math.min(.9,.18*lvlSum('tower'));
+  for(let i=knights.length-1;i>=0;i--){const k=knights[i],g=k.m.g;
+    if(k.dead){k.dead+=dt;g.rotation.x=Math.min(1.5,k.dead*5);g.position.y=.14-Math.min(.3,k.dead*.4);g.scale.setScalar(Math.max(.01,k.sc*(1-Math.max(0,k.dead-.6)*2.5)));
+      if(k.dead>1.1){scene.remove(g);knights.splice(i,1)}continue}
+    k.p+=k.sp*dt/k.len*1.0;const p=clamp(k.p,0,1);
+    g.position.x=lerp(k.sx,k.ex,p);g.position.z=lerp(k.sz,k.ez,p);
+    const bob=Math.abs(Math.sin(t*8+k.ph));g.position.y=.14+bob*.05;k.m.l1.rotation.x=Math.sin(t*8+k.ph)*.6;k.m.l2.rotation.x=-Math.sin(t*8+k.ph)*.6;
+    if(!k.checked&&p>.55){k.checked=true;if(Math.random()<towerChance){const tw=tilePos(S.tiles.findIndex(x=>x&&x.type==='tower'));
+      for(let j=0;j<18;j++)spawn(tw.x,3,tw.z,(g.position.x-tw.x)*2+rnd(-.5,.5),rnd(-1,1),(g.position.z-tw.z)*2+rnd(-.5,.5),.5,.25,1,1,.9,0,0);
+      killKnight(k,Math.round(10+calc().gold*3),'Archers shot a knight off the ridge.')}}
+    if(p>=1&&!k.dead){
+      const cut=Math.max(.3,1-.1*lvlSum('tower'));const lost=Math.floor(S.gold*(k.steal||.08)*cut);S.gold-=lost;
+      scene.remove(g);knights.splice(i,1);
+      toast(`A knight reached the hoard and stole ${fmt(lost)} gold.`,'bad');floatAt(`-${fmt(lost)}`,tilePos(HOARD).setY(2),'red big');
+      const f=$('#flash');f.classList.remove('on');void f.offsetWidth;f.classList.add('on');
+    }
+  }
+}
+
+/* --- selection / input state */
+let sel={kind:'none'};
+const selMarker=mesh(new THREE.ConeGeometry(.16,.4,4),new THREE.MeshBasicMaterial({color:0xffd36a}),0,0,0);selMarker.rotation.x=Math.PI;selMarker.visible=false;selMarker.castShadow=false;scene.add(selMarker);
+
+/* --- camera */
+const cam={yaw:.75,pitch:.66,zoom:1,base:22,tx:0,ty:.8,tz:0,gx:0,gz:0,zg:null};
+function resize(){
+  const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
+  const t=Math.tan(FOV*Math.PI/360);cam.base=Math.max(10.5/t,10.5/(t*camera.aspect));
+  if(w<=760)cam.base=Math.max(8/t,10/(t*camera.aspect))*.97;
+  const px=w>760?(336+16)/2:0,py=w<=760?h*.17:0;
+  camera.setViewOffset(w,h,px,py,w,h);camera.updateProjectionMatrix();
+  pMat.uniforms.uScale.value=renderer.domElement.height/(2*t);
+}
+addEventListener('resize',resize);
+function placeCam(){
+  const d=cam.base*cam.zoom;
+  camera.position.set(cam.tx+d*Math.cos(cam.pitch)*Math.sin(cam.yaw),cam.ty+d*Math.sin(cam.pitch),cam.tz+d*Math.cos(cam.pitch)*Math.cos(cam.yaw));
+  camera.lookAt(cam.tx,cam.ty,cam.tz);
+}
+
+/* ------------------------------------------------------------------ UI */
+function toast(msg,kind){
+  const el=document.createElement('div');el.className='toast '+(kind||'');el.textContent=msg;const box=$('#toasts');box.appendChild(el);
+  while(box.children.length>4)box.firstChild.remove();setTimeout(()=>el.remove(),5200);
+}
+function floatAt(text,v3,cls){
+  const p=v3.clone().project(camera);const w=innerWidth,h=innerHeight;
+  // account for view offset: project() already uses the offset projection matrix
+  const el=document.createElement('div');el.className='float '+(cls||'');el.textContent=text;
+  el.style.left=((p.x+1)/2*w)+'px';el.style.top=((1-p.y)/2*h)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1250);
+}
+const dragonTitle=d=>`${SPECIES[d.sp].n} ${STAGES[stageOf(d)].n}${raidOf(d.id)?' · on a raid':d.hurt>0?' · wounded':''}`;
+function effectText(type,l){
+  switch(type){
+    case'roost':return`Houses 2 dragons · +${25*(l-1)}% gold from them`;
+    case'hatchery':return`Hatch time ${hatchTime(l)}s · ${Math.round(rareChance(l))}% chance of a rare species`;
+    case'pasture':return`Feeds ${4+l} dragons`;
+    case'mine':return`+${4*l} gold/s before bonuses`;
+    case'treasury':return`+${15*l}% gold from everything`;
+    case'tower':return`${Math.min(90,18*l)}% of knights shot down · theft cut ${10*l}%`;
+  }
+}
+let panelLive=[];
+function renderPanel(){
+  const el=$('#panel');let h='';const live=[];
+  const head=(t,s)=>`<div class="head"><div><h2>${t}</h2><div class="sub">${s||''}</div></div><button class="x" data-act="close" aria-label="Close">×</button></div>`;
+  if(sel.kind==='none'||(sel.kind==='tile'&&sel.i===HOARD)){
+    const ri=rankIdx(),next=RANKS[ri+1];
+    h+=sel.kind==='tile'?head('The Hoard','Everything you have taken'):`<div class="head"><div><h2>Your lair</h2><div class="sub">Cinder Spire, a very defensible rock</div></div></div>`;
+    h+=`<h3>Ledger</h3><div class="kv"><span>Total plundered</span><b id="pTot"></b></div><div class="kv"><span>Rank</span><b>${RANKS[ri][1]}</b></div>`;
+    h+=next?`<div class="kv"><span>Next rank at</span><b>${fmt(next[0])} gold</b></div>`:'';
+    h+=S.emperor?`<div class="kv"><span>Royal armies sent</span><b>${S.wave||0}</b></div>`:'';
+    h+=`<div class="kv"><span>Knights scorched</span><b>${S.kills}</b></div><div class="kv"><span>Next knights</span><b id="pKn"></b></div>`;
+    live.push(()=>{$('#pTot').textContent=fmt(S.total);$('#pKn').textContent=knights.length?'at the gate':Math.max(0,Math.ceil(S.knightIn))+'s'});
+    h+=`<h3>Species found (${S.seen.length}/${SPECIES.length})</h3><div style="display:flex;flex-wrap:wrap;gap:6px">`+SPECIES.map((x,i)=>S.seen.includes(i)?`<span class="tag" style="color:${x.css};margin:0">${x.n} ×${x.m}</span>`:`<span class="tag" style="color:var(--dim);margin:0;opacity:.5">???</span>`).join('')+`</div>`;
+    h+=`<h3>Villages (${S.vil.filter(v=>v.won).length}/${VIL.length} conquered)</h3>`+VIL.map((v,i)=>`<button class="drow" data-act="selv" data-i="${i}"><span class="dot" style="color:${S.vil[i].rebel?'#f2a03a':S.vil[i].won?'#8cc06c':'#e0503f'};background:currentColor"></span><span class="n">${v.name}<small>${S.vil[i].rebel?'Rebelling · tribute stopped':S.vil[i].won?'Conquered':'Defense '+v.def+(landGain()?' · +'+landGain()+' plot'+(landGain()>1?'s':''):'')}</small></span></button>`).join('');
+    h+=`<h3>Dragons (${S.dragons.length})</h3>`;
+    for(const d of S.dragons){h+=`<button class="drow" data-act="seld" data-id="${d.id}"><span class="dot" style="color:${SPECIES[d.sp].css};background:${SPECIES[d.sp].css}"></span><span class="n">${d.name}<small>${dragonTitle(d)}</small></span><span class="r" data-inc="${d.id}"></span></button>`}
+    live.push(()=>{const r=calc();document.querySelectorAll('[data-inc]').forEach(e=>e.textContent=f1(r.per.get(+e.dataset.inc)||0)+'/s')});
+    h+=`<p class="fine" style="margin-top:14px">Drag to turn the island, scroll or pinch to zoom. Tap a plot to build, tap a dragon to stroke its scales for gold, tap a knight to scorch it.</p>`;
+    h+=`<button class="link" data-act="reset" id="rst">Start over</button>`;
+  }else if(sel.kind==='tile'){
+    const t=S.tiles[sel.i];
+    if(!t&&!isOpen(sel.i)){
+      const vi=Math.max(0,VIL.findIndex((v,k)=>!S.vil[k].won));
+      h+=head('Unclaimed land','Overgrown and watched by villagers')+`<p>Conquer a village to claim more land. Your next conquest claims <b>${landGain()}</b> plot${landGain()>1?'s':''}, and each one after claims one more.</p><button class="btn" data-act="selv" data-i="${vi}">View ${VIL[vi].name}</button>`;
+    }else if(!t){
+      h+=head('Empty plot','Choose what to raise here');
+      for(const k of Object.keys(BUILD)){const b=BUILD[k],c=buildCost(k);
+        h+=`<button class="btn" data-act="build" data-type="${k}" data-cost="${c}"><span class="c">${fmt(c)}</span><span class="sw" style="background:${b.col}"></span><b>${b.name}</b><small>${b.desc}</small></button>`}
+    }else{
+      const b=BUILD[t.type];h+=head(`${b.name}`,`Level ${t.lvl} of ${MAXLVL}`);
+      h+=`<p>${b.desc}</p><h3>Effect</h3><div class="kv"><span>Now</span><b style="text-align:right">${effectText(t.type,t.lvl)}</b></div>`;
+      if(t.lvl<MAXLVL){const c=upCost(t.type,t.lvl);h+=`<div class="kv"><span>Level ${t.lvl+1}</span><b style="text-align:right">${effectText(t.type,t.lvl+1)}</b></div><button class="btn go" data-act="up" data-cost="${c}">Upgrade · ${fmt(c)} gold</button>`}
+      else h+=`<p class="fine">Fully upgraded.</p>`;
+      if(t.type==='roost'){
+        h+=`<h3>Roosting here</h3>`;const ds=S.dragons.filter(d=>d.roost===sel.i);
+        h+=ds.length?ds.map(d=>`<button class="drow" data-act="seld" data-id="${d.id}"><span class="dot" style="color:${SPECIES[d.sp].css};background:${SPECIES[d.sp].css}"></span><span class="n">${d.name}<small>${dragonTitle(d)}</small></span></button>`).join(''):'<p class="fine">Empty. Hatch an egg to fill it.</p>';
+        h+=`<p class="fine">${ds.length}/2 slots used.</p>`;
+      }
+      if(t.type==='hatchery'){
+        h+=`<h3>Incubator</h3>`;
+        if(t.egg){h+=`<p id="eggTxt"></p><div class="bar"><i id="eggFill"></i></div>`;live.push(()=>{const e=S.tiles[sel.i]&&S.tiles[sel.i].egg;if(!e)return;$('#eggTxt').textContent=`A mystery egg is warming. ${Math.max(0,Math.ceil(e.dur-e.t))}s left.`;$('#eggFill').style.width=(e.t/e.dur*100)+'%'})}
+        else{const c=eggCost(),fs=freeSlots();
+          h+=`<button class="btn go" data-act="egg" data-cost="${c}" ${fs<=0?'data-block="1"':''}>Buy a dragon egg · ${fmt(c)} gold</button>`;
+          h+=fs<=0?`<p class="warn">No free roost slot. Build or keep a Roost, each holds two dragons.</p>`:`<p class="fine">${fs} free roost slot${fs>1?'s':''}. Eggs cost more as the brood grows.</p>`}
+      }
+      if(t.type==='pasture')h+=`<p class="fine">Your pastures feed ${feedCap()} dragons in total and you keep ${S.dragons.length}. Dragons beyond that go hungry: they earn only a third and grow slowly. Build more pastures or upgrade them.</p>`;
+    }
+  }else if(sel.kind==='vil'){
+    const vi=sel.i,v=VIL[vi],st=S.vil[vi],rd=S.raids.find(r=>r.v===vi),pill=st.won&&!st.rebel;
+    h+=head(v.name,st.rebel?'In revolt. Tribute has stopped.':st.won?'Conquered. Pays tribute.':'Free village');
+    h+=`<h3>Intel</h3>`;
+    if(!pill){h+=`<div class="kv"><span>${st.rebel?'Rebel defense':'Defense'}</span><b>${f1(vdef(vi)).replace(/\.0$/,'')}</b></div><div class="kv"><span>Spoils</span><b>${fmt(vloot(vi))} gold</b></div>`;
+      h+=st.rebel?`<div class="kv"><span>Tribute restored</span><b>+${f1(v.trib*treasuryMult())}/s</b></div>`:`<div class="kv"><span>Land</span><b>${landGain()?'+'+landGain()+' plot'+(landGain()>1?'s':''):'All claimed'}</b></div><div class="kv"><span>Tribute after</span><b>+${v.trib}/s</b></div>`}
+    else h+=`<div class="kv"><span>Tribute</span><b>+${f1(v.trib*treasuryMult())}/s</b></div><div class="kv"><span>Pillage haul</span><b>${fmt(v.loot*.2)} gold</b></div>`;
+    if(st.rebel)h+=`<p class="warn">The villagers have thrown off your rule. Crush the revolt to collect tribute again. Watchtowers make revolts less likely.</p>`;
+    if(rd){
+      h+=`<h3>Raid underway</h3><p id="rdTxt"></p><div class="bar"><i id="rdFill"></i></div>`;
+      live.push(()=>{const r=S.raids.find(x=>x.v===sel.i);if(!r){setTimeout(renderPanel,0);return}const k=r.t/r.dur;$('#rdTxt').textContent=k<.3?'Dragons are flying to the village.':k<.62?'The village is burning.':'The raiders are flying home.';$('#rdFill').style.width=(k*100)+'%'});
+    }else if(pill&&st.cd>0){
+      h+=`<p id="cdTxt" class="fine"></p>`;
+      live.push(()=>{const c=S.vil[sel.i].cd;if(c<=0){setTimeout(renderPanel,0);return}$('#cdTxt').textContent=`The villagers are rebuilding. Pillage again in ${Math.ceil(c)}s.`});
+    }else{
+      const el=S.dragons.filter(d=>stageOf(d)>=1&&!raidOf(d.id)&&!(d.hurt>0));
+      for(const id of [...raidPick])if(!el.some(d=>d.id===id))raidPick.delete(id);
+      h+=`<h3>Choose raiders</h3>`;
+      h+=el.length?el.map(d=>`<button class="drow ${raidPick.has(d.id)?'on':''}" data-act="rp" data-id="${d.id}"><span class="dot" style="color:${SPECIES[d.sp].css};background:${SPECIES[d.sp].css}"></span><span class="n">${d.name}<small>${dragonTitle(d)}</small></span><span class="r">${f1(pw(d))} power</span></button>`).join(''):`<p class="fine">No dragon is ready. Only drakes and elders can raid, and they must be rested.</p>`;
+      const pick2=el.filter(d=>raidPick.has(d.id)),power=pick2.reduce((a,d)=>a+pw(d),0);
+      if(el.length)h+=`<button class="link" data-act="rpall" style="margin-top:8px">Select all</button>`;
+      h+=`<div class="kv" style="margin-top:10px"><span>Raid power</span><b>${f1(power)}</b></div>`;
+      if(!pill){const pr=winChance(power,vdef(vi));h+=`<div class="kv"><span>Chance of victory</span><b style="color:${pr<.25?'#e0503f':pr<.55?'#f2c14e':'#8cc06c'}">${power?oddsLabel(pr)+' · '+Math.round(pr*100)+'%':'-'}</b></div>`}
+      h+=`<button class="btn go" data-act="send" data-cost="0" ${pick2.length?'':'data-block="1"'} style="margin-top:12px">${pill?'Pillage':st.rebel?'Crush the revolt':'Send raid'} (${pick2.length} dragon${pick2.length===1?'':'s'})</button>`;
+      h+=`<p class="fine">Raiders earn no gold while they are away. If the raid fails they come home wounded and rest for a while.</p>`;
+    }
+  }else if(sel.kind==='dragon'){
+    const d=S.dragons.find(x=>x.id===sel.id);
+    if(!d){sel={kind:'none'};return renderPanel()}
+    const sp=SPECIES[d.sp];
+    h+=head(d.name,`<span style="color:${sp.css}">${dragonTitle(d)}</span>`+(sp.m>=RARE?`<span class="tag" style="color:${sp.css}">Rare</span>`:''));
+    h+=`<h3>Output</h3><div class="kv"><span>Gold</span><b id="dInc"></b></div><div class="kv"><span>Food</span><b>${calc().fedIds.has(d.id)?'Fed':'<span class="warn">Hungry</span>'}</b></div><div class="kv"><span>Species bonus</span><b>×${sp.m}</b></div><div class="kv"><span>Roost</span><b>Roost, row ${Math.floor(d.roost/GRID)+1} col ${d.roost%GRID+1}</b></div>`;
+    const st=stageOf(d),nx=STAGES[st+1];
+    h+=`<h3>Growth</h3>`;
+    if(nx){h+=`<p class="fine" id="dGrow"></p><div class="bar"><i id="dFill"></i></div>`}else h+=`<p class="fine">Fully grown. Fearsome.</p>`;
+    h+=`<button class="btn go" data-act="pat" style="margin-top:14px">Stroke scales<small id="dPat"></small></button>`;
+    live.push(()=>{const dd=S.dragons.find(x=>x.id===sel.id);if(!dd)return;const r=calc();$('#dInc').textContent=f1(r.per.get(dd.id)||0)+'/s';
+      const pt=$('#dPat');if(pt)pt.textContent=`+${fmt(patValue(dd))} gold per tap`;
+      const s2=stageOf(dd),n2=STAGES[s2+1];if(n2&&$('#dGrow')){const a=STAGES[s2].at,f=(dd.age-a)/(n2.at-a);$('#dGrow').textContent=`${Math.max(0,Math.ceil(n2.at-dd.age))}s of well-fed growing until ${n2.n}`;$('#dFill').style.width=clamp(f,0,1)*100+'%'}});
+  }
+  el.innerHTML=h;panelLive=live;tickPanel();
+}
+function tickPanel(){
+  document.querySelectorAll('#panel [data-cost]').forEach(b=>{b.disabled=S.gold<+b.dataset.cost||!!b.dataset.block});
+  panelLive.forEach(f=>f());
+}
+const patValue=d=>Math.max(2,Math.round((calc().per.get(d.id)||0)*1.5));
+
+let raidPick=new Set();
+function select(s){
+  if(s.kind==='vil'&&!(sel.kind==='vil'&&sel.i===s.i))raidPick=new Set();
+  const wasV=sel.kind==='vil';sel=s;
+  if(s.kind==='vil'){const g=vilObjs[s.i].g.position;cam.gx=g.x;cam.gz=g.z;cam.zg=.75}
+  else if(wasV){cam.gx=0;cam.gz=0;cam.zg=1}
+  renderPanel();
+  selFrame.visible=sel.kind==='tile';
+  if(sel.kind==='tile'){const p=tilePos(sel.i);selFrame.position.set(p.x,.17,p.z)}
+  selMarker.visible=sel.kind==='dragon';
+}
+function doBuild(type){
+  const i=sel.i,c=buildCost(type);if(S.tiles[i]||S.gold<c||!isOpen(i))return;
+  S.gold-=c;S.tiles[i]={type,lvl:1};placeTile(i,true);const p=tilePos(i);burst(new THREE.Vector3(p.x,.4,p.z),24,.8,.7,.6,2.2,.4,.8);
+  toast(`${BUILD[type].name} built.`,'good');renderPanel();save();
+}
+function doUp(){
+  const t=S.tiles[sel.i];if(!t||t.lvl>=MAXLVL)return;const c=upCost(t.type,t.lvl);if(S.gold<c)return;
+  S.gold-=c;t.lvl++;const egg=t.egg;placeTile(sel.i,true);const p=tilePos(sel.i);burst(new THREE.Vector3(p.x,1,p.z),30,1,.8,.3,2.6,.35,.9);
+  toast(`${BUILD[t.type].name} is now level ${t.lvl}.`,'good');renderPanel();save();
+}
+function doEgg(){
+  const t=S.tiles[sel.i];if(!t||t.type!=='hatchery'||t.egg)return;const c=eggCost();if(S.gold<c||freeSlots()<=0)return;
+  S.gold-=c;S.eggs++;t.egg={t:0,dur:hatchTime(t.lvl)};renderPanel();save();
+}
+function hatch(i){
+  const t=S.tiles[i];const od=odds(t.lvl);let r=Math.random()*100,sp=0;for(let k=0;k<od.length;k++){if(r<od[k]){sp=k;break}r-=od[k]}
+  t.egg=null;
+  const rs=roostIdx().map(x=>({x,n:S.dragons.filter(d=>d.roost===x).length})).filter(o=>o.n<2).sort((a,b)=>a.n-b.n);
+  if(!rs.length){S.gold+=eggCost();toast('The egg had nowhere to roost and was refunded.','bad');return}
+  const d={id:uid++,name:pick(NAMES_A)+pick(NAMES_B),sp,age:0,roost:rs[0].x};S.dragons.push(d);if(!S.seen.includes(sp)){S.seen.push(sp);toast(`New species discovered: ${SPECIES[sp].n}.`,'rare')}syncDragons();
+  const p=tilePos(i);burst(new THREE.Vector3(p.x,1,p.z),50,...(new THREE.Color(SPECIES[sp].glow).toArray()),3,.4,1);
+  const rare=SPECIES[sp].m>=RARE;toast(`${d.name} hatched, a ${SPECIES[sp].n} dragon!${rare?' A rare one.':''}`,rare?'rare':'good');
+  if(sel.kind==='tile'&&sel.i===i||sel.kind==='none')renderPanel();save();
+}
+function doSend(){
+  if(sel.kind!=='vil')return;const vi=sel.i,st=S.vil[vi];if(S.raids.some(r=>r.v===vi)||(st.won&&!st.rebel&&st.cd>0))return;
+  const ids=[...raidPick].filter(id=>{const d=S.dragons.find(x=>x.id===id);return d&&stageOf(d)>=1&&!raidOf(id)&&!(d.hurt>0)});
+  if(!ids.length)return;
+  S.raids.push({v:vi,ids,t:0,dur:26,done:false,lost:false,pill:st.won&&!st.rebel});raidPick=new Set();
+  toast(`${ids.length} dragon${ids.length>1?'s':''} set out for ${VIL[vi].name}.`,'good');renderPanel();save();
+}
+function resolveRaid(r){
+  r.done=true;const v=VIL[r.v],st=S.vil[r.v],vo=vilObjs[r.v];
+  const power=r.ids.map(id=>S.dragons.find(d=>d.id===id)).filter(Boolean).reduce((a,d)=>a+pw(d),0);
+  const wp=new THREE.Vector3(vo.g.position.x,vo.g.position.y+1,vo.g.position.z);
+  if(r.pill){const g=Math.round(v.loot*.2);S.gold+=g;S.total+=g;st.cd=120;toast(`Pillaged ${v.name} for ${fmt(g)} gold.`,'good');floatAt('+'+fmt(g),wp.clone().setY(3),'big');burst(wp,40,1,.6,.2,3,.4,1);return}
+  if(Math.random()<winChance(power,vdef(r.v))){
+    if(st.rebel){const g=vloot(r.v);st.rebel=false;st.cd=0;st.t0=S.t;S.gold+=g;S.total+=g;refreshVillage(r.v);
+      toast(`The revolt in ${v.name} is crushed. Tribute resumes and the rebels paid ${fmt(g)} gold.`,'good');floatAt('+'+fmt(g),wp.clone().setY(3),'big');burst(wp,40,1,.7,.2,3,.4,1);return}
+    const fresh=LAND_ORDER.filter(i=>!isOpen(i)).slice(0,landGain());S.land.push(...fresh);
+    st.won=true;st.t0=S.t;st.cd=0;S.gold+=v.loot;S.total+=v.loot;refreshLand();refreshVillage(r.v);
+    toast(`${v.name} has fallen. +${fmt(v.loot)} gold${fresh.length?` and ${fresh.length} new plot${fresh.length>1?'s':''} of land`:''}.`,'rare');
+    floatAt('+'+fmt(v.loot),wp.clone().setY(3),'big');burst(wp,60,1,.7,.2,3.5,.45,1.2);
+    fresh.forEach(i=>{const p=tilePos(i);burst(new THREE.Vector3(p.x,.5,p.z),26,.6,1,.5,2.4,.4,1)});
+  }else{r.lost=true;toast(`${st.rebel?'The rebels':v.name+'\'s defenders'} drove the raid off. Your dragons limp home.`,'bad')}
+}
+function stepRaids(dt){
+  for(let i=S.raids.length-1;i>=0;i--){const r=S.raids[i];r.t+=dt;
+    if(!r.done&&r.t>=r.dur*.62){resolveRaid(r);renderPanel()}
+    if(r.t>=r.dur){if(r.lost)r.ids.forEach(id=>{const d=S.dragons.find(x=>x.id===id);if(d)d.hurt=45});S.raids.splice(i,1);renderPanel();save()}}
+  for(const d of S.dragons)if(d.hurt>0)d.hurt-=dt;
+  for(const v of S.vil)if(v.cd>0)v.cd-=dt;
+}
+function doPat(){
+  const d=S.dragons.find(x=>x.id===sel.id);if(!d)return;patDragon(d);
+}
+function patDragon(d){
+  const v=patValue(d);S.gold+=v;S.total+=v;const D=dragons.get(d.id);
+  if(D){const p=D.m.g.position.clone();p.y+=1.2*D.cur;floatAt('+'+fmt(v),p,'');burst(p,6,1,.8,.3,1.2,.2,.6)}
+}
+$('#panel').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const a=b.dataset.act;
+  if(a==='close')select({kind:'none'});
+  else if(a==='build')doBuild(b.dataset.type);
+  else if(a==='up')doUp();
+  else if(a==='egg')doEgg();
+  else if(a==='pat')doPat();
+  else if(a==='seld')select({kind:'dragon',id:+b.dataset.id});
+  else if(a==='selv')select({kind:'vil',i:+b.dataset.i});
+  else if(a==='rp'){const id=+b.dataset.id;raidPick.has(id)?raidPick.delete(id):raidPick.add(id);renderPanel()}
+  else if(a==='rpall'){S.dragons.filter(d=>stageOf(d)>=1&&!raidOf(d.id)&&!(d.hurt>0)).forEach(d=>raidPick.add(d.id));renderPanel()}
+  else if(a==='send')doSend();
+  else if(a==='reset'){if(b.dataset.armed){try{localStorage.removeItem(KEY)}catch(x){}S=freshState();dragons.forEach(D=>scene.remove(D.m.g));dragons.clear();knights.splice(0).forEach(k=>scene.remove(k.m.g));for(let i=0;i<GRID*GRID;i++)placeTile(i,false);refreshLand();vilObjs.forEach((_,i)=>refreshVillage(i));cam.gx=cam.gz=0;cam.zg=1;syncDragons();select({kind:'none'});save()}
+    else{b.dataset.armed=1;b.textContent='Tap again to erase your hoard';setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent='Start over'}},3500)}}
+});
+$('#bannerBtn').addEventListener('click',()=>scorch(nearestKnight()));
+
+/* --- pointer input */
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+function setRay(e){const r=cv.getBoundingClientRect();ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(ndc,camera)}
+function pickAt(e){
+  setRay(e);
+  let h=ray.intersectObjects(knights.filter(k=>!k.dead).map(k=>k.m.hit),false);if(h.length)return{kind:'knight',k:h[0].object.userData.knight};
+  h=ray.intersectObjects([...dragons.values()].map(D=>D.m.hit),false);if(h.length)return{kind:'dragon',id:h[0].object.userData.dragon};
+  h=ray.intersectObjects(vilObjs.map(v=>v.hit),false);if(h.length)return{kind:'vil',i:h[0].object.userData.vil};
+  h=ray.intersectObjects(pickTiles.filter(m=>isOpen(m.userData.tile)),false);if(h.length)return{kind:'tile',i:h[0].object.userData.tile};
+  return null;
+}
+const ptrs=new Map();let drag=null,pinch=0;
+const pdist=()=>{const a=[...ptrs.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={id:e.pointerId,moved:0};if(ptrs.size===2){pinch=pdist();drag.moved=99}});
+cv.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)){hover(e);return}
+  const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(ptrs.size===2){const d=pdist();if(pinch)cam.zoom=clamp(cam.zoom*pinch/d,.4,2.2);cam.zg=null;pinch=d;return}
+  if(drag){drag.moved+=Math.abs(dx)+Math.abs(dy);if(drag.moved>8){cam.yaw-=dx*.006;cam.pitch=clamp(cam.pitch+dy*.004,.25,1.3)}}
+});
+cv.addEventListener('pointerup',e=>{
+  ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=0;
+  if(drag&&drag.id===e.pointerId&&drag.moved<=8&&ptrs.size===0)click(e);
+  if(ptrs.size===0)drag=null;
+});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);if(!ptrs.size)drag=null});
+cv.addEventListener('wheel',e=>{e.preventDefault();cam.zoom=clamp(cam.zoom*Math.exp(e.deltaY*.0012),.4,2.2);cam.zg=null},{passive:false});
+function hover(e){if(e.pointerType==='touch')return;const h=pickAt(e);cv.classList.toggle('pointer',!!h);
+  if(h&&h.kind==='tile'){const p=tilePos(h.i);hovFrame.position.set(p.x,.17,p.z);hovFrame.visible=true}else hovFrame.visible=false}
+function click(e){
+  const h=pickAt(e);
+  if(!h){select({kind:'none'});return}
+  if(h.kind==='knight'){scorch(h.k);return}
+  if(h.kind==='dragon'){const d=S.dragons.find(x=>x.id===h.id);select({kind:'dragon',id:h.id});if(d)patDragon(d);return}
+  if(h.kind==='vil'){select({kind:'vil',i:h.i});return}
+  select({kind:'tile',i:h.i});
+}
+
+/* ------------------------------------------------------------------ main loop */
+for(let i=0;i<GRID*GRID;i++)placeTile(i,false);
+buildVillages();refreshLand(true);
+syncDragons();
+{const a=(Date.now()-(S.ts||Date.now()))/1000;if(a>20)setTimeout(()=>away(a),600)}
+resize();renderPanel();
+
+let last=performance.now(),hudT=0,panT=0,saveT=0,floatT=0,T=0;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function sim(dt){
+  S.t+=dt;const r=calc();
+  S.gold+=r.gold*dt;S.total+=r.gold*dt;
+  for(const d of S.dragons)d.age+=dt*(r.fedIds.has(d.id)?1:.2);
+  for(let i=0;i<GRID*GRID;i++){const t=S.tiles[i];if(t&&t.egg){t.egg.t+=dt;if(t.egg.t>=t.egg.dur)hatch(i)}}
+  stepRaids(dt);
+  if(S.vil.every(v=>v.won)&&!S.emperor){S.emperor=true;S.armyIn=70;const dc=$('#decree');dc.classList.remove('on');void dc.offsetWidth;dc.classList.add('on');toast('You are the Dragon Emperor. Royal armies will come for your hoard.','rare')}
+  if(S.emperor){if(S.armyIn==null)S.armyIn=120;S.armyIn-=dt;
+    if(S.armyIn<=0){if(knights.length)S.armyIn=8;else{S.wave=(S.wave||0)+1;spawnKnights(true);S.armyIn=rnd(150,210);if(sel.kind==='none')renderPanel()}}}
+  if(S.revoltIn==null)S.revoltIn=150;S.revoltIn-=dt;
+  if(S.revoltIn<=0){S.revoltIn=rnd(110,190);
+    const cand=S.vil.map((v,i)=>i).filter(i=>S.vil[i].won&&!S.vil[i].rebel&&!S.raids.some(r=>r.v===i)&&S.t-(S.vil[i].t0||0)>90);
+    if(cand.length){if(Math.random()<Math.min(.7,.09*lvlSum('tower')))toast('Your watchtower garrison snuffed out a rebellion before it started.','good');
+      else{const i=pick(cand);S.vil[i].rebel=true;refreshVillage(i);const vp=vilObjs[i].g.position;burst(new THREE.Vector3(vp.x,vp.y+1.5,vp.z),40,1,.3,.1,3,.4,1);
+        toast(`${VIL[i].name} is in revolt! Its tribute has stopped.`,'bad');renderPanel()}}}
+  S.knightIn-=dt;
+  if(S.knightIn<=0&&!knights.length){spawnKnights();S.knightIn=rnd(55,95)}
+  else if(S.knightIn<=0)S.knightIn=5;
+  floatT+=dt;if(floatT>2.2&&S.dragons.length){floatT=0;const d=pick(S.dragons),D=dragons.get(d.id);if(D){const inc=r.per.get(d.id)*2.2;const p=D.m.g.position.clone();p.y+=1*D.cur;floatAt('+'+fmt(inc),p,'')}}
+  return r;
+}
+function hud(r){
+  $('#hGold').textContent=fmt(S.gold);$('#hInc').textContent='+'+f1(r.gold)+'/s';
+  const hung=Math.max(0,S.dragons.length-r.cap);$('#hMeat').textContent=Math.min(S.dragons.length,r.cap)+'/'+S.dragons.length;$('#hMeatR').textContent=hung?hung+' hungry':'';$('#chipMeat').classList.toggle('neg',hung>0);
+  $('#hDr').textContent=S.dragons.length;$('#hDrCap').textContent='of '+roostIdx().length*2;
+  const ri=rankIdx(),nx=RANKS[ri+1];$('#hRank').textContent=RANKS[ri][1];$('#hRankBar').style.width=(nx?clamp((S.total-RANKS[ri][0])/(nx[0]-RANKS[ri][0]),0,1)*100:100)+'%';
+  const kn=knights.filter(k=>!k.dead&&!k.burning);const bn=$('#banner');
+  if(kn.length){bn.hidden=false;const k=nearestKnight()||kn[0];const secs=Math.max(0,Math.ceil((1-k.p)*k.len/k.sp));$('#bannerTxt').textContent=`${kn.some(k=>k.army)?'Royal army: ':''}${kn.length} knight${kn.length>1?'s':''} at the gate · ${secs}s`}else bn.hidden=true;
+}
+function anim(dt,t){
+  for(const d of S.dragons){const D=dragons.get(d.id);if(D)animDragon(D,d,t,dt)}
+  // buildings pop-in + life
+  for(let i=0;i<GRID*GRID;i++){const g=tileGroups[i];if(!g)continue;
+    if(g.userData.pop<1){g.userData.pop=Math.min(1,g.userData.pop+dt*2.6);const k=g.userData.pop,c1=1.70158,c3=c1+1;const e=1+c3*Math.pow(k-1,3)+c1*Math.pow(k-1,2);g.scale.setScalar(Math.max(.01,e))}
+    const tl=S.tiles[i];
+    if(tl.type==='hatchery'){const egg=g.getObjectByName('egg');if(egg){egg.visible=!!tl.egg;if(tl.egg){const f=tl.egg.t/tl.egg.dur;egg.rotation.z=Math.sin(t*(6+f*14))*.12*(.3+f);egg.position.y=.98+Math.sin(t*3)*.03;}}}
+    if(tl.type==='tower'){const f=g.getObjectByName('flag');if(f)f.rotation.y=Math.sin(t*4)*.4}
+    if(tl.type==='pasture')g.children.forEach(c=>{if(c.userData.sheep!==undefined){c.position.y=Math.abs(Math.sin(t*2+c.userData.sheep*1.7))*.03;c.rotation.y+=Math.sin(t*.5+c.userData.sheep)*.004}});
+  }
+  for(const rd of S.raids){const k=rd.t/rd.dur;if(k>.3&&k<.75){const vo=vilObjs[rd.v];for(let j=0;j<2;j++){const h=pick(vo.hp);spawn(vo.g.position.x+h.x+rnd(-.3,.3),vo.g.position.y+.4,vo.g.position.z+h.z+rnd(-.3,.3),rnd(-.3,.3),rnd(1.5,3),rnd(-.3,.3),rnd(.6,1.1),rnd(.7,1.1),1,.55,.15,0,0)}}}
+  vilObjs.forEach((vo,i)=>{if(S.vil[i].rebel&&Math.random()<dt*14){const h=pick(vo.hp);spawn(vo.g.position.x+h.x+rnd(-.3,.3),vo.g.position.y+.5,vo.g.position.z+h.z+rnd(-.3,.3),rnd(-.2,.2),rnd(1.2,2.4),rnd(-.2,.2),rnd(.6,1),rnd(.6,.9),1,.35,.1,0,0)}
+    if(S.vil[i].won&&!S.vil[i].rebel&&Math.random()<dt*6){const h=pick(vo.hp);spawn(vo.g.position.x+h.x,vo.g.position.y+.8,vo.g.position.z+h.z,rnd(-.2,.2),rnd(.5,1.1),rnd(-.2,.2),rnd(2,4),.14,1,.45,.15,0,1)}});
+  isl.cur=lerp(isl.cur,isl.target,Math.min(1,dt*1.2));island.scale.set(isl.cur/9.8,1,isl.cur/9.8);
+  // hoard
+  const gs=.75+Math.min(1.2,Math.log10(Math.max(10,S.gold))*.2);hoardScale=lerp(hoardScale,gs,Math.min(1,dt*1.5));
+  const pile=hoard.getObjectByName('pile');pile.scale.set(hoardScale,hoardScale*1.1,hoardScale);pile.position.y=.2+.5*hoardScale*1.1;
+  hoardLight.intensity=1+Math.sin(t*3)*.15+hoardScale*.4;lavaLight.intensity=2.3+Math.sin(t*1.7)*.35+Math.sin(t*5.3)*.15;
+  window.__bits.forEach(b=>{b.position.y=b.userData.y+Math.sin(t*b.userData.sp+b.userData.ph)*.6;b.rotation.y+=dt*.1});
+  window.__clouds.forEach(c=>{c.userData.a+=c.userData.s*dt;c.position.x=Math.cos(c.userData.a)*c.userData.d;c.position.z=Math.sin(c.userData.a)*c.userData.d});
+  // frames & marker
+  const pulse=.65+.35*Math.sin(t*4);selFrame.material.opacity=pulse;
+  if(sel.kind==='dragon'){const D=dragons.get(sel.id);if(D){selMarker.position.copy(D.m.g.position);selMarker.position.y+=1.5*D.cur+.5+Math.sin(t*4)*.1;selMarker.rotation.y=t*2}else selMarker.visible=false}
+}
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt=(now-last)/1000;last=now;
+  if(dt>2){away(dt);dt=.05}
+  dt=Math.min(dt,.1);T+=dt;
+  const r=sim(dt);
+  hudT+=dt;if(hudT>.12){hudT=0;hud(r)}
+  panT+=dt;if(panT>.25){panT=0;tickPanel()}
+  saveT+=dt;if(saveT>8){saveT=0;save()}
+  cam.tx=lerp(cam.tx,cam.gx,Math.min(1,dt*3));cam.tz=lerp(cam.tz,cam.gz,Math.min(1,dt*3));if(cam.zg!==null){cam.zoom=lerp(cam.zoom,cam.zg,Math.min(1,dt*3));if(Math.abs(cam.zoom-cam.zg)<.01)cam.zg=null}
+  placeCam();
+  anim(dt,T);updBreaths(dt);updKnights(dt,T);updParticles(dt);
+  updLabels();renderer.render(scene,camera);
+}
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+addEventListener('pagehide',save);
+setTimeout(()=>toast('Welcome to Wyrmhold. Build a hatchery, buy an egg, and keep the dragons fed.','good'),400);
+requestAnimationFrame(frame);
+window.__wy={S:()=>S,select,spawnKnights,cam,syncDragons,tilePos};
+})();
+</script>
+
+</body></html>
