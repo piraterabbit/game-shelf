@@ -1,0 +1,612 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Paintfall Roster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a spec sheet. A frame list as cards with stat bars, then the tunnel enemies, then collapsible source. Orange = player, cyan/magenta = the tunnels. */
+:root{--bg:#eef0f4;--surface:#ffffff;--fg:#1b2230;--muted:#5d677a;--line:#d5dae3;--accent:#ee5a10;--cool:#0a8aa6;--bar:#e3e7ee;--code-bg:#141a26;--code-fg:#d8e0ee;--danger:#c52a3a;
+--display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;--body:Inter,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141d;--surface:#171e2b;--fg:#e6ebf4;--muted:#9aa5b8;--line:#2a3447;--accent:#ff7a33;--cool:#3fd0ee;--bar:#252e3f;--code-bg:#0a0e15;--code-fg:#d8e0ee;--danger:#ff5a69;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141d;--surface:#171e2b;--fg:#e6ebf4;--muted:#9aa5b8;--line:#2a3447;--accent:#ff7a33;--cool:#3fd0ee;--bar:#252e3f;--code-bg:#0a0e15;--code-fg:#d8e0ee;--danger:#ff5a69;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:clamp(34px,6vw,54px);line-height:1.02;font-weight:700}
+h2{font-size:26px;font-weight:600}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.lede{color:var(--muted);max-width:60ch;margin:12px 0 0}
+header{display:flex;flex-direction:column;gap:10px}
+.sec-head{display:flex;flex-direction:column;gap:4px;margin-bottom:16px}
+.sec-head p{margin:0;color:var(--muted);max-width:62ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h3{font-size:19px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h3 small{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted)}
+.note{color:var(--muted);font-size:13px;margin:0}
+.stat{display:grid;grid-template-columns:64px 1fr 34px;align-items:center;gap:8px;font-size:12px}
+.stat span:first-child{color:var(--muted)}
+.bar{height:6px;background:var(--bar);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.enemies .bar i{background:var(--cool)}
+.stat b{font-family:var(--mono);font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border:1px solid var(--line);border-radius:3px;color:var(--muted);white-space:nowrap}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.reward{color:var(--accent);border-color:var(--accent)}
+.swatch{height:10px;border-radius:2px}
+.src{border:1px solid var(--line);border-radius:6px;background:var(--surface);min-width:0}
+.src+.src{margin-top:10px}
+.src summary{cursor:pointer;padding:12px 16px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;font-family:var(--display);font-weight:600;font-size:17px}
+.src summary code{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted)}
+.src summary:focus-visible,.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.srcbar{display:flex;gap:12px;align-items:center;padding:0 16px 10px}
+.lines{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.copy{font:500 13px var(--body);background:var(--accent);color:#fff;border:0;border-radius:4px;padding:6px 14px;cursor:pointer}
+.copy.done{background:var(--cool)}
+pre{margin:0;background:var(--code-bg);color:var(--code-fg);padding:16px;overflow:auto;max-height:520px;border-radius:0 0 6px 6px;font:12.5px/1.55 var(--mono);tab-size:2}
+@media (max-width:520px){.stat{grid-template-columns:58px 1fr 32px}}
+</style>
+<div class="wrap">
+<header>
+<span class="eyebrow">Paintfall / reference</span>
+<h1>Paintfall Roster</h1>
+<p class="lede">The eleven player frames and the four things that live in the arena tunnels, with their stats and the source for their models.</p>
+</header>
+<section><div class="sec-head"><h2>Player frames</h2><p>Bars are relative to the best frame in each stat. Armor is hits you can take, jump is a multiple of the base jump, and target size is how big a target you are (smaller is better).</p></div><div class="grid" id="frames"></div></section>
+<section class="enemies"><div class="sec-head"><h2>Tunnel enemies</h2><p>They live on the two tunnel levels, never use the stairs, and only notice you on their own level. A shield blocks all of them.</p></div><div class="grid" id="enemies"></div></section>
+<section><div class="sec-head"><h2>Source</h2><p>Copies of the files from the game. Open one and press Copy.</p></div><details class="src"><summary><span>Frame models and loadouts</span><code>src/game/Drone.tsx</code></summary><div class="srcbar"><button type="button" class="copy" data-i="0">Copy</button><span class="lines">193 lines</span></div><pre id="src0"><code>import { useFrame } from &quot;@react-three/fiber&quot;;
+import { useLayoutEffect, useMemo, useRef } from &quot;react&quot;;
+import * as THREE from &quot;three&quot;;
+import { GunModel } from &quot;./Gun&quot;;
+import { isHatId, type FrameId, type HatId, type SkinId, type WeaponId, isSkinId } from &quot;./sim&quot;;
+import { HatModel } from &quot;./Hat&quot;;
+import { HAT_SPOT } from &quot;./hatlooks&quot;;
+
+export type Frame = FrameId;
+export type Loadout = { paint: string; body: string; frame: Frame; skin?: SkinId; hat?: HatId };
+export const PURPLE = &quot;#7c3aed&quot;; // a deep purple (the paint used to be the paler #a3b8ff)
+export const PAINTS = [&quot;#26c6da&quot;, &quot;#4ade80&quot;, &quot;#ffd23f&quot;, &quot;#ff4d8d&quot;, PURPLE];
+export const BODIES = [&quot;#e9edf2&quot;, &quot;#2b313d&quot;, &quot;#ff6a1a&quot;, &quot;#6b7f99&quot;];
+export const FRAMES: { id: Frame; label: string }[] = [
+  { id: &quot;scout&quot;, label: &quot;Scout&quot; },
+  { id: &quot;tank&quot;, label: &quot;Tank&quot; },
+  { id: &quot;orb&quot;, label: &quot;Orb&quot; },
+  { id: &quot;striker&quot;, label: &quot;Striker&quot; },
+  { id: &quot;titan&quot;, label: &quot;Titan&quot; },
+  { id: &quot;hopper&quot;, label: &quot;Hopper&quot; },
+  { id: &quot;brawler&quot;, label: &quot;Brawler&quot; },
+  { id: &quot;phantom&quot;, label: &quot;Phantom&quot; },
+  { id: &quot;gunner&quot;, label: &quot;Gunner&quot; },
+  { id: &quot;rocket&quot;, label: &quot;Rocket&quot; },
+  { id: &quot;drifter&quot;, label: &quot;Drifter&quot; },
+];
+
+/** Where each frame wears its visor, ring and gun, so the extras sit right on every body shape. */
+const LOOK: Record&lt;Frame, { visor: [number, number]; ring: [number, number]; gun: [number, number] }&gt; = {
+  scout: { visor: [1.35, 0.36], ring: [0.9, 0.75], gun: [0.55, 0.95] },
+  tank: { visor: [1.35, 0.46], ring: [0.9, 0.8], gun: [0.55, 0.95] },
+  orb: { visor: [1.35, 0.36], ring: [0.9, 0.75], gun: [0.55, 0.95] },
+  striker: { visor: [1.3, 0.3], ring: [1.0, 0.62], gun: [0.5, 1.0] },
+  titan: { visor: [1.62, 0.64], ring: [1.0, 1.05], gun: [1.0, 1.05] },
+  hopper: { visor: [1.5, 0.42], ring: [1.25, 0.6], gun: [0.55, 1.25] },
+  brawler: { visor: [1.4, 0.62], ring: [0.8, 0.78], gun: [0.62, 0.95] },
+  phantom: { visor: [1.15, 0.26], ring: [0.5, 0.46], gun: [0.4, 0.9] },
+  gunner: { visor: [1.57, 0.29], ring: [0.5, 0.78], gun: [0.62, 1.0] },
+  rocket: { visor: [1.25, 0.37], ring: [0.5, 0.62], gun: [0.55, 0.9] },
+  drifter: { visor: [1.28, 0.4], ring: [0.78, 0.9], gun: [0.75, 0.95] },
+};
+export const DEFAULT_LOADOUT: Loadout = { paint: PAINTS[0]!, body: BODIES[0]!, frame: &quot;scout&quot; };
+
+export function loadLoadout(): Loadout {
+  try {
+    const saved = { ...DEFAULT_LOADOUT, ...JSON.parse(localStorage.getItem(&quot;paintfall-loadout&quot;) || &quot;{}&quot;) };
+    if (saved.paint === &quot;#a3b8ff&quot;) saved.paint = PURPLE; // players who picked the old pale purple get the new one
+    if (saved.hat !== undefined &amp;&amp; !isHatId(saved.hat)) delete saved.hat; // an unknown hat is no hat
+    return saved;
+  } catch {
+    return DEFAULT_LOADOUT;
+  }
+}
+export const saveLoadout = (l: Loadout) =&gt; localStorage.setItem(&quot;paintfall-loadout&quot;, JSON.stringify(l));
+
+const SKINS_KEY = &quot;paintfall-skins&quot;;
+/** Skins you have bought. They are remembered between visits, though your cash is not. */
+export function loadOwnedSkins(): SkinId[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SKINS_KEY) || &quot;[]&quot;);
+    const ids = Array.isArray(raw) ? raw.filter(isSkinId) : [];
+    return [&quot;standard&quot;, ...ids.filter((id) =&gt; id !== &quot;standard&quot;)];
+  } catch {
+    return [&quot;standard&quot;];
+  }
+}
+export const saveOwnedSkins = (owned: SkinId[]) =&gt; localStorage.setItem(SKINS_KEY, JSON.stringify(owned));
+/** The skin to actually wear: the one you picked if you own it, otherwise the standard one. */
+export const wearableSkin = (skin: unknown, owned: SkinId[]): SkinId =&gt; (isSkinId(skin) &amp;&amp; owned.includes(skin) ? skin : &quot;standard&quot;);
+
+/**
+ * The player character. The skin sets the finish: Standard uses your paint and body colours, Chrome is a
+ * mirror, Ember glows and flickers like hot metal, and Prism slowly shifts through every colour.
+ */
+export function DroneModel({ loadout, weapon = &quot;marker&quot;, spin = false }: { loadout: Loadout; weapon?: WeaponId; spin?: boolean }) {
+  const g = useRef&lt;THREE.Group&gt;(null);
+  const skin: SkinId = loadout.skin ?? &quot;standard&quot;;
+  const { body, glow } = useMemo(() =&gt; ({ body: new THREE.MeshStandardMaterial(), glow: new THREE.MeshStandardMaterial() }), []);
+  useLayoutEffect(() =&gt; {
+    body.emissive.set(&quot;#000000&quot;);
+    body.emissiveIntensity = 0;
+    glow.color.set(loadout.paint);
+    glow.emissive.set(loadout.paint);
+    glow.emissiveIntensity = 1.6;
+    if (skin === &quot;chrome&quot;) { body.color.set(&quot;#e5e7eb&quot;); body.metalness = 0.95; body.roughness = 0.08; }
+    else if (skin === &quot;ember&quot;) { body.color.set(&quot;#1c120d&quot;); body.metalness = 0.3; body.roughness = 0.6; body.emissive.set(&quot;#ff4d00&quot;); body.emissiveIntensity = 1; glow.color.set(&quot;#ffa24d&quot;); glow.emissive.set(&quot;#ffa24d&quot;); glow.emissiveIntensity = 2; }
+    else if (skin === &quot;prism&quot;) { body.metalness = 0.6; body.roughness = 0.2; glow.emissiveIntensity = 2; }
+    else { body.color.set(loadout.body); body.metalness = 0.5; body.roughness = 0.25; }
+  }, [skin, loadout.paint, loadout.body, body, glow]);
+  useFrame((s, d) =&gt; {
+    if (!g.current) return;
+    if (spin) g.current.rotation.y += d * 0.8;
+    g.current.position.y = Math.sin(s.clock.elapsedTime * 2) * 0.08;
+    const t = s.clock.elapsedTime;
+    if (skin === &quot;ember&quot;) body.emissiveIntensity = 0.9 + 0.35 * Math.sin(t * 5) + 0.15 * Math.sin(t * 13); // flickering heat
+    else if (skin === &quot;prism&quot;) {
+      body.color.setHSL((t * 0.12) % 1, 0.85, 0.55);
+      glow.color.setHSL((t * 0.12 + 0.35) % 1, 0.9, 0.6);
+      glow.emissive.copy(glow.color);
+    }
+  });
+  const f = loadout.frame;
+  const look = LOOK[f] ?? LOOK.scout;
+  const metal = &lt;meshStandardMaterial color=&quot;#6b7f99&quot; metalness={0.7} roughness={0.35} /&gt;;
+  return (
+    &lt;group ref={g}&gt;
+      {(f === &quot;scout&quot; || f === &quot;tank&quot; || f === &quot;orb&quot;) &amp;&amp; (
+        &lt;mesh position={[0, 0.9, 0]} material={body}&gt;
+          {f === &quot;scout&quot; &amp;&amp; &lt;capsuleGeometry args={[0.45, 0.8, 6, 16]} /&gt;}
+          {f === &quot;tank&quot; &amp;&amp; &lt;boxGeometry args={[1.1, 1.3, 0.9]} /&gt;}
+          {f === &quot;orb&quot; &amp;&amp; &lt;sphereGeometry args={[0.7, 24, 16]} /&gt;}
+        &lt;/mesh&gt;
+      )}
+      {f === &quot;striker&quot; &amp;&amp; (
+        &lt;mesh position={[0, 1.0, 0]} scale={[0.85, 1.45, 0.85]} material={body}&gt;
+          &lt;octahedronGeometry args={[0.62, 0]} /&gt;
+        &lt;/mesh&gt;
+      )}
+      {f === &quot;brawler&quot; &amp;&amp; (
+        &lt;&gt;
+          &lt;mesh position={[0, 0.95, 0]} material={body}&gt;&lt;cylinderGeometry args={[0.62, 0.72, 1.35, 8]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0.68, 1.45, 0]} material={body}&gt;&lt;sphereGeometry args={[0.3, 14, 10]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[-0.68, 1.45, 0]} material={body}&gt;&lt;sphereGeometry args={[0.3, 14, 10]} /&gt;&lt;/mesh&gt;
+        &lt;/&gt;
+      )}
+      {f === &quot;phantom&quot; &amp;&amp; (
+        &lt;mesh position={[0, 0.95, 0]} material={body}&gt;&lt;coneGeometry args={[0.52, 1.85, 5]} /&gt;&lt;/mesh&gt;
+      )}
+      {f === &quot;rocket&quot; &amp;&amp; (
+        &lt;&gt;
+          &lt;mesh position={[0, 0.95, 0]} material={body}&gt;&lt;cylinderGeometry args={[0.38, 0.38, 1.4, 16]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0, 1.9, 0]} material={body}&gt;&lt;coneGeometry args={[0.38, 0.55, 16]} /&gt;&lt;/mesh&gt;
+          {[0, 1, 2].map((i) =&gt; (
+            &lt;mesh key={i} position={[Math.sin((i * 2 * Math.PI) / 3) * 0.45, 0.4, Math.cos((i * 2 * Math.PI) / 3) * 0.45]} rotation-y={(i * 2 * Math.PI) / 3} material={body}&gt;
+              &lt;boxGeometry args={[0.05, 0.6, 0.4]} /&gt;
+            &lt;/mesh&gt;
+          ))}
+        &lt;/&gt;
+      )}
+      {f === &quot;drifter&quot; &amp;&amp; (
+        &lt;&gt;
+          &lt;mesh position={[0, 0.9, 0]} scale={[1.35, 0.42, 1.35]} material={body}&gt;&lt;sphereGeometry args={[0.65, 24, 16]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0, 1.2, 0]} material={body}&gt;&lt;sphereGeometry args={[0.4, 18, 12]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0, 0.5, 0]} rotation-x={Math.PI / 2}&gt;{metal}&lt;torusGeometry args={[0.45, 0.05, 8, 24]} /&gt;&lt;/mesh&gt;
+        &lt;/&gt;
+      )}
+      {f === &quot;gunner&quot; &amp;&amp; (
+        &lt;&gt;
+          &lt;mesh position={[0, 0.75, 0]} material={body}&gt;&lt;boxGeometry args={[0.9, 1.2, 0.7]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0, 1.55, 0]} material={body}&gt;&lt;sphereGeometry args={[0.32, 18, 12]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0.58, 1.2, 0]} material={body}&gt;&lt;boxGeometry args={[0.28, 0.2, 0.5]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[-0.58, 1.2, 0]} material={body}&gt;&lt;boxGeometry args={[0.28, 0.2, 0.5]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[0, 1.0, -0.6]} rotation-z={Math.PI / 2} material={body}&gt;&lt;cylinderGeometry args={[0.3, 0.3, 0.8, 16]} /&gt;&lt;/mesh&gt;
+        &lt;/&gt;
+      )}
+      {f === &quot;titan&quot; &amp;&amp; (
+        &lt;&gt;
+          &lt;mesh position={[0, 1.0, 0]} material={body}&gt;&lt;boxGeometry args={[1.5, 1.6, 1.2]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[1.0, 1.55, 0]} material={body}&gt;&lt;boxGeometry args={[0.4, 0.55, 0.95]} /&gt;&lt;/mesh&gt;
+          &lt;mesh position={[-1.0, 1.55, 0]} material={body}&gt;&lt;boxGeometry args={[0.4, 0.55, 0.95]} /&gt;&lt;/mesh&gt;
+        &lt;/&gt;
+      )}
+      {f === &quot;hopper&quot; &amp;&amp; (
+        &lt;&gt;
+          &lt;mesh position={[0, 1.25, 0]} material={body}&gt;&lt;sphereGeometry args={[0.5, 20, 14]} /&gt;&lt;/mesh&gt;
+          {[0.18, 0.36, 0.54, 0.72].map((y, i) =&gt; (
+            &lt;mesh key={i} position={[0, y, 0]} rotation-x={Math.PI / 2}&gt;
+              &lt;torusGeometry args={[0.24 - i * 0.02, 0.045, 6, 18]} /&gt;
+              {metal}
+            &lt;/mesh&gt;
+          ))}
+          &lt;mesh position={[0, 0.04, 0]}&gt;&lt;cylinderGeometry args={[0.34, 0.34, 0.08, 16]} /&gt;{metal}&lt;/mesh&gt;
+        &lt;/&gt;
+      )}
+      &lt;mesh position={[0, look.visor[0], look.visor[1]]} material={glow}&gt;
+        &lt;boxGeometry args={[f === &quot;titan&quot; ? 0.9 : f === &quot;phantom&quot; ? 0.3 : 0.6, 0.16, 0.12]} /&gt;
+      &lt;/mesh&gt;
+      {/* the gun it is holding, pointing forward (the gun models point down -Z, so turn them round) */}
+      &lt;group position={[look.gun[0], look.gun[1], 0.3]} rotation-y={Math.PI} scale={f === &quot;titan&quot; ? 1.25 : 1}&gt;
+        &lt;GunModel id={weapon} accent={loadout.paint} /&gt;
+      &lt;/group&gt;
+      {loadout.hat &amp;&amp; loadout.hat !== &quot;none&quot; &amp;&amp; (
+        &lt;group position={[0, (HAT_SPOT[f] ?? HAT_SPOT[&quot;scout&quot;]!).y, 0]} scale={(HAT_SPOT[f] ?? HAT_SPOT[&quot;scout&quot;]!).s}&gt;
+          &lt;HatModel id={loadout.hat} accent={loadout.paint} /&gt;
+        &lt;/group&gt;
+      )}
+      &lt;mesh position={[0, look.ring[0], 0]} rotation-x={Math.PI / 2} material={glow}&gt;
+        &lt;torusGeometry args={[look.ring[1], 0.04, 6, 32]} /&gt;
+      &lt;/mesh&gt;
+    &lt;/group&gt;
+  );
+}
+</code></pre></details><details class="src"><summary><span>Frame list and stats</span><code>src/game/sim.ts (excerpt)</code></summary><div class="srcbar"><button type="button" class="copy" data-i="1">Copy</button><span class="lines">20 lines</span></div><pre id="src1"><code>export type FrameId = &quot;scout&quot; | &quot;tank&quot; | &quot;orb&quot; | &quot;striker&quot; | &quot;titan&quot; | &quot;hopper&quot; | &quot;brawler&quot; | &quot;phantom&quot; | &quot;gunner&quot; | &quot;rocket&quot; | &quot;drifter&quot;;
+/**
+ * Per-character multipliers. fire scales the gun&#x27;s cooldown, so lower is faster. hit scales how big a target
+ * you are for incoming paintballs: a bigger body is easier to hit. Nobody jumps less than 0.8, so every
+ * character can still climb the stairs (each step rises 0.6 m).
+ */
+export type FrameStats = { speed: number; maxHp: number; jump: number; fire: number; hit: number };
+export const FRAME_STATS: Record&lt;FrameId, FrameStats&gt; = {
+  scout: { speed: 1.25, maxHp: 4, jump: 1, fire: 1, hit: 1 }, // fast and fragile
+  tank: { speed: 0.8, maxHp: 8, jump: 0.8, fire: 1.15, hit: 1.15 }, // tough and slow
+  orb: { speed: 1, maxHp: 5, jump: 1.5, fire: 0.85, hit: 1.1 }, // the all-rounder with a big jump
+  striker: { speed: 1.1, maxHp: 3, jump: 1, fire: 0.7, hit: 0.9 }, // a glass cannon: fastest fire, least armor, small target
+  titan: { speed: 0.65, maxHp: 12, jump: 0.8, fire: 1.3, hit: 1.4 }, // a juggernaut: most armor, slowest, enormous target
+  hopper: { speed: 1.05, maxHp: 4, jump: 2, fire: 1.1, hit: 1 }, // springs over most low cover
+  brawler: { speed: 0.95, maxHp: 6, jump: 1, fire: 1, hit: 1.05 }, // sturdy and steady: more armor than most without the Tank&#x27;s slowness
+  phantom: { speed: 1.15, maxHp: 3, jump: 1.3, fire: 1.2, hit: 0.8 }, // slim and quick, the smallest target, but slow to fire and easy to splat
+  gunner: { speed: 0.95, maxHp: 4, jump: 1.1, fire: 0.85, hit: 1 }, // a sharpshooter: quick on the trigger and well rounded, but nothing tough
+  rocket: { speed: 1.2, maxHp: 3, jump: 2, fire: 1.3, hit: 0.95 }, // a fast flier that jumps 2 m, and again in the air, fragile and slow to reload
+  drifter: { speed: 1, maxHp: 5, jump: 1.2, fire: 1.05, hit: 0.9 }, // a hovering saucer: even speed, a small target and a good hop
+};</code></pre></details><details class="src"><summary><span>Enemy models and textures</span><code>src/game/Game.tsx (excerpt)</code></summary><div class="srcbar"><button type="button" class="copy" data-i="2">Copy</button><span class="lines">201 lines</span></div><pre id="src2"><code>/** Painted textures for the sentry, bomber and brute (made once, in the page). */
+function enemyTextures() {
+  const make = (draw: (g: CanvasRenderingContext2D) =&gt; void) =&gt; {
+    const c = document.createElement(&quot;canvas&quot;);
+    c.width = c.height = 128;
+    draw(c.getContext(&quot;2d&quot;)!);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  // pseudo-random but fixed, so the textures look the same every time
+  let seed = 7; const rnd = () =&gt; ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  return {
+    // sentry: yellow and black warning stripes with a worn edge
+    hazard: make((g) =&gt; {
+      g.fillStyle = &quot;#1c1f26&quot;; g.fillRect(0, 0, 128, 128);
+      g.fillStyle = &quot;#e8c21a&quot;;
+      for (let x = -128; x &lt; 256; x += 32) { g.beginPath(); g.moveTo(x, 128); g.lineTo(x + 16, 128); g.lineTo(x + 144, 0); g.lineTo(x + 128, 0); g.closePath(); g.fill(); }
+      g.strokeStyle = &quot;#0e1014&quot;; g.lineWidth = 6; g.strokeRect(0, 0, 128, 128);
+      g.fillStyle = &quot;rgba(0,0,0,0.25)&quot;; for (let i = 0; i &lt; 40; i++) g.fillRect(rnd() * 128, rnd() * 128, 2 + rnd() * 5, 1);
+    }),
+    // bomber: a charred shell split by glowing magma cracks
+    magma: make((g) =&gt; {
+      g.fillStyle = &quot;#1d1614&quot;; g.fillRect(0, 0, 128, 128);
+      for (let i = 0; i &lt; 260; i++) { g.fillStyle = `rgba(${40 + rnd() * 30},${25 + rnd() * 15},${20},0.6)`; g.fillRect(rnd() * 128, rnd() * 128, 2 + rnd() * 6, 2 + rnd() * 6); }
+      g.lineCap = &quot;round&quot;;
+      for (let k = 0; k &lt; 7; k++) {
+        let x = rnd() * 128, y = rnd() * 128;
+        g.beginPath(); g.moveTo(x, y);
+        for (let n = 0; n &lt; 6; n++) { x += (rnd() - 0.5) * 40; y += (rnd() - 0.5) * 40; g.lineTo(x, y); }
+        g.strokeStyle = &quot;#ff7a1a&quot;; g.lineWidth = 3; g.stroke();
+        g.strokeStyle = &quot;#ffd23f&quot;; g.lineWidth = 1; g.stroke();
+      }
+    }),
+    // brute: rusted armour plate with seams and rivets
+    rust: make((g) =&gt; {
+      g.fillStyle = &quot;#5b3a2a&quot;; g.fillRect(0, 0, 128, 128);
+      for (let i = 0; i &lt; 500; i++) { const r = rnd(); g.fillStyle = r &lt; 0.5 ? &quot;rgba(120,62,30,0.45)&quot; : &quot;rgba(30,18,12,0.4)&quot;; g.fillRect(rnd() * 128, rnd() * 128, 1 + rnd() * 5, 1 + rnd() * 5); }
+      g.strokeStyle = &quot;#241510&quot;; g.lineWidth = 3; g.strokeRect(2, 2, 124, 124); g.beginPath(); g.moveTo(64, 0); g.lineTo(64, 128); g.stroke();
+      g.fillStyle = &quot;#b08a6a&quot;;
+      for (const [x, y] of [[12, 12], [116, 12], [12, 116], [116, 116], [52, 64], [76, 64]] as const) { g.beginPath(); g.arc(x, y, 3.5, 0, Math.PI * 2); g.fill(); }
+    }),
+  };
+}
+/** The glow colour of each kind while it wanders, and when it has seen you. */
+const ENEMY_GLOW: Record&lt;string, [string, string]&gt; = { crawler: [&quot;#27e0ff&quot;, &quot;#ff2a3a&quot;], sentry: [&quot;#ffb02e&quot;, &quot;#ff2a2a&quot;], bomber: [&quot;#ffe14a&quot;, &quot;#ff2a2a&quot;], brute: [&quot;#d946ef&quot;, &quot;#ff2a3a&quot;] };
+
+/**
+ * The tunnel enemy: a armoured robot spider. A faceted metal chassis with a glowing scanner visor and a spinning sensor ring,
+ * a dorsal antenna, six jointed legs with glowing knees, and thruster glow underneath. It scuttles faster, and its glow
+ * switches from cool cyan to hot red, when it is rushing you.
+ */
+function Crawlers({ world }: { world: World }) {
+  const refs = useRef&lt;(THREE.Group | null)[]&gt;([]);
+  const glow = useRef&lt;(THREE.MeshStandardMaterial | null)[]&gt;([]);
+  const tex = useMemo(() =&gt; enemyTextures(), []);
+  useFrame((s) =&gt; {
+    world.crawlers.forEach((c, i) =&gt; {
+      const g = refs.current[i];
+      if (!g) return;
+      g.visible = c.dead &lt;= 0 &amp;&amp; world.zone === &quot;arena&quot;;
+      const t = s.clock.elapsedTime * (c.chasing ? 20 : 8) + i;
+      g.position.set(c.p.x, c.p.y + 0.08 + Math.abs(Math.sin(t)) * 0.035, c.p.z);
+      g.rotation.y = c.yaw;
+      g.scale.setScalar(1 + (c.bite &gt; 0 ? (c.kind === &quot;sentry&quot; ? 0.08 : 0.3) : 0)); // lunges when it bites
+      const m = glow.current[i];
+      if (m) { const [calm, alert] = ENEMY_GLOW[c.kind]!; m.color.set(c.chasing ? alert : calm); m.emissive.set(c.chasing ? alert : calm); m.emissiveIntensity = c.bite &gt; 0 ? 6 : 2.5 + Math.sin(s.clock.elapsedTime * 6 + i) * 0.7; }
+      g.children.forEach((ch) =&gt; {
+        if (ch.name === &quot;ring&quot;) ch.rotation.y = s.clock.elapsedTime * (c.chasing ? 9 : 3);
+        if (ch.name === &quot;roll&quot;) ch.rotation.x = s.clock.elapsedTime * (c.chasing ? 16 : 4);
+        if (ch.name === &quot;stomp&quot;) ch.position.y = 0.55 + Math.max(0, Math.sin(t * 0.5 + (ch.userData[&quot;phase&quot;] as number))) * 0.18;
+        if (ch.name === &quot;leg&quot;) ch.rotation.y = (ch.userData[&quot;base&quot;] as number) + Math.sin(t + (ch.userData[&quot;phase&quot;] as number)) * 0.28;
+      });
+    });
+  });
+  const LEGS = [[1, 0.5], [1, 0], [1, -0.55], [-1, 0.5], [-1, 0], [-1, -0.55]] as const;
+  return (
+    &lt;&gt;
+      {world.crawlers.map((c, i) =&gt; (
+        &lt;group key={c.id} ref={(el) =&gt; { refs.current[i] = el; }}&gt;
+          {c.kind === &quot;crawler&quot; &amp;&amp; (
+            &lt;&gt;
+          {/* chassis: a flattened faceted hull with a raised armour plate and a pointed nose */}
+          &lt;mesh position={[0, 0.5, 0]} scale={[1, 0.42, 1.35]} castShadow&gt;
+            &lt;octahedronGeometry args={[0.7, 0]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#aeb6c4&quot; metalness={0.95} roughness={0.22} flatShading /&gt;
+          &lt;/mesh&gt;
+          &lt;mesh position={[0, 0.7, -0.1]}&gt;
+            &lt;boxGeometry args={[0.55, 0.12, 0.8]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#2b313d&quot; metalness={0.9} roughness={0.3} /&gt;
+          &lt;/mesh&gt;
+          &lt;mesh position={[0, 0.5, 0.75]} rotation-x={Math.PI / 2}&gt;
+            &lt;coneGeometry args={[0.26, 0.5, 4]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#2b313d&quot; metalness={0.9} roughness={0.3} flatShading /&gt;
+          &lt;/mesh&gt;
+          {/* scanner visor (a glowing slit, plus two lenses) and the status glow */}
+          &lt;mesh position={[0, 0.58, 0.62]}&gt;
+            &lt;boxGeometry args={[0.5, 0.07, 0.12]} /&gt;
+            &lt;meshStandardMaterial ref={(m) =&gt; { glow.current[i] = m; }} color=&quot;#27e0ff&quot; emissive=&quot;#27e0ff&quot; emissiveIntensity={2.5} toneMapped={false} /&gt;
+          &lt;/mesh&gt;
+          {[-0.17, 0.17].map((x) =&gt; (
+            &lt;mesh key={x} position={[x, 0.5, 0.72]}&gt;
+              &lt;cylinderGeometry args={[0.06, 0.06, 0.08, 10]} /&gt;
+              &lt;meshStandardMaterial color=&quot;#ffb02e&quot; emissive=&quot;#ffb02e&quot; emissiveIntensity={3} toneMapped={false} /&gt;
+            &lt;/mesh&gt;
+          ))}
+          &lt;mesh position={[0, 0.74, -0.45]}&gt;
+            &lt;boxGeometry args={[0.36, 0.04, 0.05]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#27e0ff&quot; emissive=&quot;#27e0ff&quot; emissiveIntensity={2} toneMapped={false} /&gt;
+          &lt;/mesh&gt;
+          {/* sensor ring and antenna */}
+          &lt;mesh name=&quot;ring&quot; position={[0, 0.82, -0.1]} rotation-x={Math.PI / 2}&gt;
+            &lt;torusGeometry args={[0.2, 0.025, 6, 20]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#ff6a1a&quot; emissive=&quot;#ff6a1a&quot; emissiveIntensity={1.8} toneMapped={false} /&gt;
+          &lt;/mesh&gt;
+          &lt;mesh position={[0.18, 1.0, -0.4]}&gt;
+            &lt;cylinderGeometry args={[0.012, 0.012, 0.5, 5]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#d7dbe3&quot; metalness={0.9} roughness={0.3} /&gt;
+          &lt;/mesh&gt;
+          &lt;mesh position={[0.18, 1.27, -0.4]}&gt;
+            &lt;sphereGeometry args={[0.04, 8, 6]} /&gt;
+            &lt;meshStandardMaterial color=&quot;#ff2a3a&quot; emissive=&quot;#ff2a3a&quot; emissiveIntensity={3} toneMapped={false} /&gt;
+          &lt;/mesh&gt;
+          {/* thruster glow underneath */}
+          &lt;mesh position={[0, 0.16, -0.1]} rotation-x={-Math.PI / 2}&gt;
+            &lt;circleGeometry args={[0.5, 16]} /&gt;
+            &lt;meshBasicMaterial color=&quot;#27e0ff&quot; transparent opacity={0.35} depthWrite={false} toneMapped={false} /&gt;
+          &lt;/mesh&gt;
+          {/* six mechanical legs: thigh, glowing knee, shin and foot */}
+          {LEGS.map(([side, z], k) =&gt; (
+            &lt;group key={k} name=&quot;leg&quot; userData={{ base: side * (z &gt; 0 ? -0.35 : z &lt; -0.3 ? 0.35 : 0), phase: k * 1.1 }} position={[side * 0.45, 0.45, z * 0.9]}&gt;
+              &lt;group rotation-z={side * -0.55}&gt;
+                &lt;mesh position={[side * 0.3, 0, 0]}&gt;
+                  &lt;boxGeometry args={[0.6, 0.07, 0.09]} /&gt;
+                  &lt;meshStandardMaterial color=&quot;#8d96a6&quot; metalness={0.9} roughness={0.3} /&gt;
+                &lt;/mesh&gt;
+                &lt;mesh position={[side * 0.62, 0, 0]}&gt;
+                  &lt;sphereGeometry args={[0.065, 8, 6]} /&gt;
+                  &lt;meshStandardMaterial color=&quot;#27e0ff&quot; emissive=&quot;#27e0ff&quot; emissiveIntensity={2.5} toneMapped={false} /&gt;
+                &lt;/mesh&gt;
+                &lt;group position={[side * 0.62, 0, 0]} rotation-z={side * -0.9}&gt;
+                  &lt;mesh position={[side * 0.3, 0, 0]}&gt;
+                    &lt;boxGeometry args={[0.6, 0.05, 0.06]} /&gt;
+                    &lt;meshStandardMaterial color=&quot;#2b313d&quot; metalness={0.9} roughness={0.3} /&gt;
+                  &lt;/mesh&gt;
+                  &lt;mesh position={[side * 0.6, 0, 0]}&gt;
+                    &lt;coneGeometry args={[0.035, 0.12, 5]} /&gt;
+                    &lt;meshStandardMaterial color=&quot;#ff6a1a&quot; emissive=&quot;#ff6a1a&quot; emissiveIntensity={1} /&gt;
+                  &lt;/mesh&gt;
+                &lt;/group&gt;
+              &lt;/group&gt;
+            &lt;/group&gt;
+          ))}
+            &lt;/&gt;
+          )}
+          {c.kind === &quot;sentry&quot; &amp;&amp; (
+            &lt;&gt;
+              &lt;mesh position={[0, 0.12, 0]}&gt;&lt;cylinderGeometry args={[0.6, 0.7, 0.24, 8]} /&gt;&lt;meshStandardMaterial map={tex.hazard} color=&quot;#ffffff&quot; metalness={0.3} roughness={0.6} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 0.7, 0]}&gt;&lt;cylinderGeometry args={[0.14, 0.2, 1, 8]} /&gt;&lt;meshStandardMaterial color=&quot;#4a5260&quot; metalness={0.8} roughness={0.45} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.35, 0]} castShadow&gt;&lt;boxGeometry args={[0.7, 0.5, 0.8]} /&gt;&lt;meshStandardMaterial map={tex.hazard} color=&quot;#ffffff&quot; metalness={0.35} roughness={0.55} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.35, 0.7]} rotation-x={Math.PI / 2}&gt;&lt;cylinderGeometry args={[0.1, 0.12, 0.7, 8]} /&gt;&lt;meshStandardMaterial color=&quot;#14161b&quot; metalness={0.9} roughness={0.25} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.5, 0.42]}&gt;&lt;boxGeometry args={[0.4, 0.08, 0.06]} /&gt;&lt;meshStandardMaterial ref={(m) =&gt; { glow.current[i] = m; }} color=&quot;#ffb02e&quot; emissive=&quot;#ffb02e&quot; emissiveIntensity={2.5} toneMapped={false} /&gt;&lt;/mesh&gt;
+              &lt;mesh name=&quot;ring&quot; position={[0, 1.75, 0]} rotation-x={Math.PI / 2}&gt;&lt;torusGeometry args={[0.28, 0.025, 6, 20]} /&gt;&lt;meshStandardMaterial color=&quot;#ffb02e&quot; emissive=&quot;#ffb02e&quot; emissiveIntensity={1.8} toneMapped={false} /&gt;&lt;/mesh&gt;
+              {[-0.5, 0.5].map((x) =&gt; &lt;mesh key={x} position={[x, 1.3, -0.1]}&gt;&lt;boxGeometry args={[0.16, 0.3, 0.5]} /&gt;&lt;meshStandardMaterial color=&quot;#14161b&quot; metalness={0.8} roughness={0.4} /&gt;&lt;/mesh&gt;)}
+            &lt;/&gt;
+          )}
+          {c.kind === &quot;bomber&quot; &amp;&amp; (
+            &lt;&gt;
+              &lt;group name=&quot;roll&quot; position={[0, 0.5, 0]}&gt;
+                &lt;mesh castShadow&gt;&lt;icosahedronGeometry args={[0.45, 0]} /&gt;&lt;meshStandardMaterial map={tex.magma} color=&quot;#ffffff&quot; emissive=&quot;#ff5a10&quot; emissiveMap={tex.magma} emissiveIntensity={0.9} metalness={0.2} roughness={0.8} flatShading /&gt;&lt;/mesh&gt;
+                {[[0.5, 0, 0], [-0.5, 0, 0], [0, 0.5, 0], [0, -0.5, 0], [0, 0, 0.5], [0, 0, -0.5]].map(([x, y, z], n) =&gt; (
+                  &lt;mesh key={n} position={[x!, y!, z!]} rotation={[z ? Math.PI / 2 : 0, 0, x ? -Math.PI / 2 * Math.sign(x) : 0]}&gt;&lt;coneGeometry args={[0.1, 0.25, 5]} /&gt;&lt;meshStandardMaterial color=&quot;#ffd23f&quot; emissive=&quot;#ffb000&quot; emissiveIntensity={1.6} toneMapped={false} /&gt;&lt;/mesh&gt;
+                ))}
+                &lt;mesh rotation-y={Math.PI / 2}&gt;&lt;torusGeometry args={[0.46, 0.04, 6, 20]} /&gt;&lt;meshStandardMaterial ref={(m) =&gt; { glow.current[i] = m; }} color=&quot;#ffe14a&quot; emissive=&quot;#ffe14a&quot; emissiveIntensity={2.5} toneMapped={false} /&gt;&lt;/mesh&gt;
+              &lt;/group&gt;
+            &lt;/&gt;
+          )}
+          {c.kind === &quot;brute&quot; &amp;&amp; (
+            &lt;&gt;
+              &lt;mesh position={[0, 1.3, 0]} castShadow&gt;&lt;boxGeometry args={[1.5, 0.9, 2]} /&gt;&lt;meshStandardMaterial map={tex.rust} color=&quot;#ffffff&quot; metalness={0.45} roughness={0.75} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.85, -0.1]}&gt;&lt;boxGeometry args={[1.1, 0.25, 1.4]} /&gt;&lt;meshStandardMaterial map={tex.rust} color=&quot;#9a8a80&quot; metalness={0.5} roughness={0.7} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.4, 1.05]}&gt;&lt;boxGeometry args={[0.8, 0.5, 0.3]} /&gt;&lt;meshStandardMaterial color=&quot;#1a0f0b&quot; metalness={0.7} roughness={0.5} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.45, 1.22]}&gt;&lt;boxGeometry args={[0.6, 0.1, 0.05]} /&gt;&lt;meshStandardMaterial ref={(m) =&gt; { glow.current[i] = m; }} color=&quot;#d946ef&quot; emissive=&quot;#d946ef&quot; emissiveIntensity={2.5} toneMapped={false} /&gt;&lt;/mesh&gt;
+              &lt;mesh position={[0, 1.3, -0.2]}&gt;&lt;sphereGeometry args={[0.28, 10, 8]} /&gt;&lt;meshStandardMaterial color=&quot;#d946ef&quot; emissive=&quot;#d946ef&quot; emissiveIntensity={2.2} toneMapped={false} /&gt;&lt;/mesh&gt;
+              {[-1, 1].map((sx) =&gt; [-0.7, 0.7].map((z) =&gt; (
+                &lt;mesh key={`${sx}${z}`} name=&quot;stomp&quot; userData={{ phase: sx * 1.6 + z }} position={[sx * 0.75, 0.55, z]}&gt;&lt;boxGeometry args={[0.38, 1.1, 0.38]} /&gt;&lt;meshStandardMaterial map={tex.rust} color=&quot;#8a7468&quot; metalness={0.5} roughness={0.7} /&gt;&lt;/mesh&gt;
+              )))}
+              {[-1, 1].map((sx) =&gt; (
+                &lt;group key={sx} position={[sx * 0.95, 1.9, 0.2]}&gt;
+                  &lt;mesh&gt;&lt;boxGeometry args={[0.3, 0.3, 0.5]} /&gt;&lt;meshStandardMaterial color=&quot;#7a1f6b&quot; metalness={0.6} roughness={0.4} /&gt;&lt;/mesh&gt;
+                  &lt;mesh position={[0, 0, 0.5]} rotation-x={Math.PI / 2}&gt;&lt;cylinderGeometry args={[0.07, 0.07, 0.6, 8]} /&gt;&lt;meshStandardMaterial color=&quot;#14161b&quot; metalness={0.9} roughness={0.3} /&gt;&lt;/mesh&gt;
+                &lt;/group&gt;
+              ))}
+            &lt;/&gt;
+          )}
+        &lt;/group&gt;
+      ))}
+    &lt;/&gt;
+  );
+}</code></pre></details><details class="src"><summary><span>Enemy behaviour</span><code>src/game/crawlers.ts</code></summary><div class="srcbar"><button type="button" class="copy" data-i="3">Copy</button><span class="lines">121 lines</span></div><pre id="src3"><code>// Crawlers: the enemy that lives in the tunnels. A low, fast, many-legged thing that wanders its own level of the
+// tunnels and, when it spots you, rushes you and bites. It never shoots, so the answer is to shoot it first (two hits)
+// or keep a corner between you. It stays on its own level (it cannot use the stairs) and only exists in the arena.
+// Crawlers are part of your own game (like the arena&#x27;s bots), so they need no network messages.
+import { CELL, TUNNEL_FLOOR, TUNNEL_FLOOR2 } from &quot;./tunnels&quot;;
+import { bumpStat } from &quot;./ctf&quot;;
+import { BALL_SPEED, GRAVITY, collide, fire, lineOfSight, type Box, type Events, type V3, type World } from &quot;./sim&quot;;
+
+export type EnemyKind = &quot;crawler&quot; | &quot;sentry&quot; | &quot;bomber&quot; | &quot;brute&quot;;
+export type Crawler = { id: number; kind: EnemyKind; p: V3; hp: number; dead: number; yaw: number; cd: number; target: V3; /** which level it lives on: 1 upper, 2 lower */ level: 1 | 2; /** it saw you (rushing, or aiming) */ chasing: boolean; /** seconds left of an attack that is landing (for the animation) */ bite: number };
+
+/**
+ * The four things that live in the tunnels.
+ * crawler: the fast biter. sentry: a turret that never moves but shoots from far away. bomber: a rolling mine that races at you and blows up.
+ * brute: a big slow armoured walker that is hard to kill and hits hard.
+ */
+export const ENEMIES: Record&lt;EnemyKind, { name: string; hp: number; r: number; speed: number; rush: number; sight: number; reach: number; cd: number; dmg: number; reward: number; perLevel: number }&gt; = {
+  crawler: { name: &quot;Crawler&quot;, hp: 2, r: 0.7, speed: 3.2, rush: 7.2, sight: 22, reach: 1.5, cd: 1.1, dmg: 1, reward: 250, perLevel: 4 },
+  sentry: { name: &quot;Sentry&quot;, hp: 3, r: 0.6, speed: 0, rush: 0, sight: 32, reach: 32, cd: 1.5, dmg: 1, reward: 300, perLevel: 2 },
+  bomber: { name: &quot;Bomber&quot;, hp: 1, r: 0.55, speed: 4, rush: 10.5, sight: 20, reach: 2.2, cd: 0, dmg: 2, reward: 150, perLevel: 2 },
+  brute: { name: &quot;Brute&quot;, hp: 6, r: 1.05, speed: 2, rush: 4.6, sight: 22, reach: 2.6, cd: 1.7, dmg: 2, reward: 500, perLevel: 1 },
+};
+
+export const CRAWLER_COUNT = 8; // four on each level
+export const ENEMY_COUNT = Object.values(ENEMIES).reduce((n, e) =&gt; n + 2 * e.perLevel, 0); // every kind, on both levels
+export const CRAWLER_HP = 2;
+export const CRAWLER_R = 0.7;
+export const CRAWLER_SPEED = 3.2; // wandering
+export const CRAWLER_RUSH = 7.2; // rushing you (you run at 9)
+export const CRAWLER_SIGHT = 22; // how far it notices you
+export const CRAWLER_BITE_RANGE = 1.5;
+export const CRAWLER_BITE_CD = 1.1;
+export const CRAWLER_REWARD = 250; // shot points for a crawler: more than a bot, because it is in a dark tunnel
+export const CRAWLER_RESPAWN = 15;
+export const SENTRY_SHOT_OWNER = 1000; // paintballs fired by a sentry carry 1000 + its id, so they are not a bot&#x27;s or a player&#x27;s
+
+/** Is there room for a crawler here: not inside a crate, pillar or wall? */
+export function spotFree(boxes: Box[], p: V3, r = CRAWLER_R + 0.2): boolean {
+  for (const b of boxes) {
+    if (b.hole || b.max.y &lt;= p.y + 0.01 || b.min.y &gt;= p.y + 1.2) continue;
+    if (p.x &gt; b.min.x - r &amp;&amp; p.x &lt; b.max.x + r &amp;&amp; p.z &gt; b.min.z - r &amp;&amp; p.z &lt; b.max.z + r) return false;
+  }
+  return true;
+}
+
+/** A free place on a level, from `spots` (the middles of its tunnel cells). */
+export function pickSpot(spots: V3[], boxes: Box[], level: 1 | 2, rand: () =&gt; number = Math.random): V3 {
+  const y = level === 1 ? TUNNEL_FLOOR : TUNNEL_FLOOR2;
+  const here = spots.filter((s) =&gt; Math.abs(s.y - y) &lt; 0.01);
+  for (let i = 0; i &lt; 60; i++) {
+    const s = here[Math.floor(rand() * here.length)]!;
+    const p = { x: s.x + (rand() - 0.5) * (CELL - 2), y, z: s.z + (rand() - 0.5) * (CELL - 2) };
+    if (spotFree(boxes, p)) return p;
+  }
+  return { ...here[0]! };
+}
+
+export function makeCrawlers(spots: V3[], boxes: Box[], rand: () =&gt; number = Math.random): Crawler[] {
+  const out: Crawler[] = [];
+  for (const kind of Object.keys(ENEMIES) as EnemyKind[]) for (const level of [1, 2] as const) for (let n = 0; n &lt; ENEMIES[kind].perLevel; n++) {
+    out.push({ id: out.length, kind, p: pickSpot(spots, boxes, level, rand), hp: ENEMIES[kind].hp, dead: 0, yaw: 0, cd: 1 + rand(), target: pickSpot(spots, boxes, level, rand), level, chasing: false, bite: 0 });
+  }
+  return out;
+}
+
+export function stepCrawlers(w: World, dt: number, ev: Events) {
+  const pl = w.player;
+  const eye = { x: pl.p.x, y: pl.p.y + 1.5, z: pl.p.z };
+  const hurt = (n: number) =&gt; {
+    if (pl.shield &gt; 0) return;
+    pl.hp -= n; ev.playerHit = true;
+    if (pl.hp &lt;= 0) { pl.dead = 3; pl.deaths++; bumpStat(w, &quot;me&quot;, &quot;deaths&quot;); ev.playerKilled = true; }
+  };
+  for (const c of w.crawlers) {
+    const k = ENEMIES[c.kind];
+    if (c.dead &gt; 0) {
+      c.dead -= dt;
+      if (c.dead &lt;= 0) { c.hp = k.hp; c.p = pickSpot(w.crawlerSpots, w.boxes, c.level); c.target = pickSpot(w.crawlerSpots, w.boxes, c.level); c.chasing = false; c.cd = 1; }
+      continue;
+    }
+    c.bite = Math.max(0, c.bite - dt);
+    c.cd = Math.max(0, c.cd - dt);
+    const dist = Math.hypot(pl.p.x - c.p.x, pl.p.z - c.p.z);
+    const head = { x: c.p.x, y: c.p.y + (c.kind === &quot;sentry&quot; ? 1.2 : c.kind === &quot;brute&quot; ? 1.4 : 0.6), z: c.p.z };
+    const onLevel = Math.abs(pl.p.y - c.p.y) &lt; 2.5; // it does not notice you on the other level, or on the ground above
+    const sees = pl.dead &lt;= 0 &amp;&amp; onLevel &amp;&amp; dist &lt; k.sight * (c.chasing &amp;&amp; c.kind !== &quot;sentry&quot; ? 1.4 : 1) &amp;&amp; lineOfSight(head, eye, w.boxes);
+    c.chasing = sees;
+    if (c.kind === &quot;sentry&quot;) { // never moves: turns to face you and fires, leading its shot like the arena bots
+      if (sees) {
+        c.yaw = Math.atan2(pl.p.x - c.p.x, pl.p.z - c.p.z);
+        if (c.cd &lt;= 0) {
+          c.cd = k.cd; c.bite = 0.2;
+          const lead = dist / BALL_SPEED, drop = 0.5 * GRAVITY * lead * lead;
+          fire(w, head, { x: eye.x - head.x, y: eye.y - 0.3 - head.y + drop, z: eye.z - head.z }, SENTRY_SHOT_OWNER + c.id, 0.05);
+        }
+      }
+      continue;
+    }
+    let tx = c.target.x - c.p.x, tz = c.target.z - c.p.z;
+    if (sees) { tx = pl.p.x - c.p.x; tz = pl.p.z - c.p.z; }
+    const tl = Math.hypot(tx, tz);
+    if (sees &amp;&amp; dist &lt;= k.reach) {
+      c.yaw = Math.atan2(tx, tz);
+      if (c.kind === &quot;bomber&quot;) { // it blows up on you: it hurts, and is gone (no reward: you did not shoot it)
+        hurt(k.dmg); ev.crawlerBite = true; c.dead = CRAWLER_RESPAWN; c.bite = 0.35;
+        continue;
+      }
+      if (c.cd &lt;= 0) { c.cd = k.cd; c.bite = 0.35; ev.crawlerBite = true; hurt(k.dmg); }
+      continue;
+    }
+    if (!sees &amp;&amp; tl &lt; 1.5) { c.target = pickSpot(w.crawlerSpots, w.boxes, c.level); continue; }
+    if (tl &gt; 0.01) {
+      const ox = c.p.x, oz = c.p.z, sp = (sees ? k.rush : k.speed) * dt;
+      c.p.x += (tx / tl) * sp; c.p.z += (tz / tl) * sp;
+      collide(c.p, k.r, w.boxes);
+      c.yaw = Math.atan2(tx, tz);
+      if (Math.hypot(c.p.x - ox, c.p.z - oz) &lt; sp * 0.2 &amp;&amp; !sees) c.target = pickSpot(w.crawlerSpots, w.boxes, c.level); // stuck on something: try elsewhere
+    }
+  }
+}
+</code></pre></details></section>
+</div>
+<script>
+var D={"frames": [{"id": "scout", "speed": 1.25, "hp": 4, "jump": 1.0, "fire": 1.0, "hit": 1.0, "note": "fast and fragile"}, {"id": "tank", "speed": 0.8, "hp": 8, "jump": 0.8, "fire": 1.15, "hit": 1.15, "note": "tough and slow"}, {"id": "orb", "speed": 1.0, "hp": 5, "jump": 1.5, "fire": 0.85, "hit": 1.1, "note": "the all-rounder with a big jump"}, {"id": "striker", "speed": 1.1, "hp": 3, "jump": 1.0, "fire": 0.7, "hit": 0.9, "note": "a glass cannon: fastest fire, least armor, small target"}, {"id": "titan", "speed": 0.65, "hp": 12, "jump": 0.8, "fire": 1.3, "hit": 1.4, "note": "a juggernaut: most armor, slowest, enormous target"}, {"id": "hopper", "speed": 1.05, "hp": 4, "jump": 2.0, "fire": 1.1, "hit": 1.0, "note": "springs over most low cover"}, {"id": "brawler", "speed": 0.95, "hp": 6, "jump": 1.0, "fire": 1.0, "hit": 1.05, "note": "sturdy and steady: more armor than most without the Tank's slowness"}, {"id": "phantom", "speed": 1.15, "hp": 3, "jump": 1.3, "fire": 1.2, "hit": 0.8, "note": "slim and quick, the smallest target, but slow to fire and easy to splat"}, {"id": "gunner", "speed": 0.95, "hp": 4, "jump": 1.1, "fire": 0.85, "hit": 1.0, "note": "a sharpshooter: quick on the trigger and well rounded, but nothing tough"}, {"id": "rocket", "speed": 1.2, "hp": 3, "jump": 2.0, "fire": 1.3, "hit": 0.95, "note": "a fast flier that jumps 2 m, and again in the air, fragile and slow to reload"}, {"id": "drifter", "speed": 1.0, "hp": 5, "jump": 1.2, "fire": 1.05, "hit": 0.9, "note": "a hovering saucer: even speed, a small target and a good hop"}], "enemies": [{"id": "crawler", "name": "Crawler", "hp": 2, "speed": 3.2, "rush": 7.2, "sight": 22, "reach": 1.5, "dmg": 1, "reward": 250, "per": 4, "blurb": "The fast biter. Rushes you on sight and bites for 1."}, {"id": "sentry", "name": "Sentry", "hp": 3, "speed": 0.0, "rush": 0.0, "sight": 32, "reach": 32.0, "dmg": 1, "reward": 300, "per": 2, "blurb": "A turret that never moves. Turns to face you and fires leading shots from far away."}, {"id": "bomber", "name": "Bomber", "hp": 1, "speed": 4.0, "rush": 10.5, "sight": 20, "reach": 2.2, "dmg": 2, "reward": 150, "per": 2, "blurb": "A spiked rolling mine. Races at you and blows up for 2. Shoot it first."}, {"id": "brute", "name": "Brute", "hp": 6, "speed": 2.0, "rush": 4.6, "sight": 22, "reach": 2.6, "dmg": 2, "reward": 500, "per": 1, "blurb": "A big slow armoured walker. Takes six hits and swings for 2."}]};
+var pct=function(v,m){return Math.max(6,Math.round(v/m*100))};
+function stat(l,v,m,t){return '<div class="stat"><span>'+l+'</span><div class="bar"><i style="width:'+pct(v,m)+'%"></i></div><b>'+t+'</b></div>'}
+var mx=function(k){return Math.max.apply(null,D.frames.map(function(f){return f[k]}))};
+document.getElementById('frames').innerHTML=D.frames.map(function(f){
+ var n=f.id.charAt(0).toUpperCase()+f.id.slice(1);
+ return '<article class="card"><h3>'+n+'<small>'+f.id+'</small></h3><p class="note">'+f.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</p>'+
+ stat('Speed',f.speed,mx('speed'),Math.round(f.speed*100)+'%')+stat('Armor',f.hp,mx('hp'),f.hp)+stat('Jump',f.jump,mx('jump'),f.jump+'x')+stat('Fire rate',1/f.fire,1/Math.min.apply(null,D.frames.map(function(g){return g.fire})),Math.round(100/f.fire)+'%')+stat('Target',f.hit,mx('hit'),Math.round(f.hit*100)+'%')+'</article>'}).join('');
+var em=function(k){return Math.max.apply(null,D.enemies.map(function(e){return e[k]}))};
+var glow={crawler:'linear-gradient(90deg,#27e0ff,#8d96a6)',sentry:'repeating-linear-gradient(135deg,#e8c21a 0 8px,#1c1f26 8px 16px)',bomber:'linear-gradient(90deg,#1d1614,#ff7a1a,#ffd23f)',brute:'linear-gradient(90deg,#5b3a2a,#d946ef)'};
+document.getElementById('enemies').innerHTML=D.enemies.map(function(e){
+ return '<article class="card"><div class="swatch" style="background:'+glow[e.id]+'"></div><h3>'+e.name+'<small>'+e.per+' per level</small></h3><p class="note">'+e.blurb+'</p>'+
+ stat('Health',e.hp,em('hp'),e.hp)+stat('Speed',e.rush||e.speed,em('rush'),e.rush?e.rush+' m/s':'still')+stat('Sight',e.sight,em('sight'),e.sight+' m')+stat('Damage',e.dmg,em('dmg'),e.dmg)+
+ '<div class="tags"><span class="tag reward">'+e.reward+' shot points</span></div></article>'}).join('');
+document.querySelectorAll('.copy').forEach(function(b){b.addEventListener('click',function(){
+ var t=document.getElementById('src'+b.dataset.i).textContent;
+ var ok=function(){b.textContent='Copied';b.classList.add('done');setTimeout(function(){b.textContent='Copy';b.classList.remove('done')},1600)};
+ var sel=function(){var r=document.createRange();r.selectNodeContents(document.getElementById('src'+b.dataset.i));var s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='Selected, press copy'};
+ try{navigator.clipboard.writeText(t).then(ok,sel)}catch(e){sel()}})});
+</script>
+
+</body></html>
