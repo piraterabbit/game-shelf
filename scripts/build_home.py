@@ -19,7 +19,7 @@ page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Game Shelf</title>
 <style>
-:root{{--bg:#fff;--fg:#0e1330;--mut:#6b7085;--line:#e7e8ee;--chip:#f3f3f6;--ink:#0e1330;--ink-fg:#fff;--acc:#ffb84d;color-scheme:light}}
+:root{{--r-card:20px;--bg:#fff;--fg:#0e1330;--mut:#6b7085;--line:#e7e8ee;--chip:#f3f3f6;--ink:#0e1330;--ink-fg:#fff;--acc:#ffb84d;color-scheme:light}}
 *{{box-sizing:border-box}}
 html{{scroll-behavior:smooth}}
 body{{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}}
@@ -38,7 +38,7 @@ header.top{{display:grid;grid-template-columns:1.15fr 1fr;gap:clamp(24px,5vw,72p
 .btn:hover{{background:var(--chip)}}
 .btn.pri{{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}}
 .btn.pri:hover{{background:#1d2347}}
-.hero{{position:relative;display:block;border-radius:32px;overflow:hidden;min-height:340px;aspect-ratio:5/4;background:#0b0f1e;isolation:isolate}}
+.hero{{position:relative;display:block;border-radius:var(--r-card);overflow:hidden;min-height:340px;aspect-ratio:5/4;background:#0b0f1e;isolation:isolate}}
 .hero img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .5s}}
 .hero:hover img{{transform:scale(1.04)}}
 .hero::after{{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(200deg,rgba(8,12,28,.15) 25%,rgba(8,12,28,.88))}}
@@ -55,7 +55,7 @@ nav.bar{{display:flex;justify-content:space-between;align-items:center;gap:16px;
 select{{font:inherit;font-weight:500;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer}}
 .grid{{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(28px,4vw,56px) clamp(20px,3vw,48px);padding-bottom:72px}}
 .shot{{display:block}}
-.thumb{{position:relative;display:block;aspect-ratio:8/5;border-radius:20px;overflow:hidden;background:#eef0f5;box-shadow:0 0 0 1px rgba(14,19,48,.06)}}
+.thumb{{position:relative;display:block;aspect-ratio:8/5;border-radius:var(--r-card);overflow:hidden;background:#eef0f5;box-shadow:0 0 0 1px rgba(14,19,48,.06)}}
 .thumb img{{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s}}
 .shot:hover .thumb img,.shot:focus-visible .thumb img{{transform:scale(1.045)}}
 .shot:focus-visible{{outline:3px solid var(--acc);outline-offset:6px;border-radius:22px}}
