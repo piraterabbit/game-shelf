@@ -1,11 +1,5 @@
 [
   {
-    "slug": "big-toy-room",
-    "title": "Big Toy Room",
-    "tag": "3D",
-    "source": "https://claude.ai/artifact/Pb7cT8BQntZqUKGA3rj6rD"
-  },
-  {
     "slug": "boom-and-box",
     "title": "Boom and Box",
     "tag": "3D",
@@ -42,12 +36,6 @@
     "source": "https://claude.ai/artifact/FSsENXjUo3jFA28aaKinF9"
   },
   {
-    "slug": "gooner-muffins",
-    "title": "Gooner Muffins",
-    "tag": "3D",
-    "source": "https://claude.ai/artifact/8SuunLHzr5au9sQnM54URH"
-  },
-  {
     "slug": "hollow-brew",
     "title": "Hollow Brew",
     "tag": "3D",
@@ -64,24 +52,6 @@
     "title": "PaintFall Karting",
     "tag": "3D",
     "source": "https://claude.ai/artifact/YAznvCw8PnXRNEsrnhe5HB"
-  },
-  {
-    "slug": "party-pong-live",
-    "title": "Party Pong Live",
-    "tag": "2D",
-    "source": "https://claude.ai/artifact/8cRjgPzBtEqmqLQrq977qF"
-  },
-  {
-    "slug": "sunken-bell",
-    "title": "The Sunken Bell",
-    "tag": "2D",
-    "source": "https://claude.ai/artifact/UVzp8S3aYrpsqcSfR3idWJ"
-  },
-  {
-    "slug": "sunken-bell-3d",
-    "title": "The Sunken Bell 3D",
-    "tag": "3D",
-    "source": "https://claude.ai/artifact/MkHXrr8HebdnAkHti1WrjW"
   },
   {
     "slug": "toy-box",
