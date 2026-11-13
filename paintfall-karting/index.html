@@ -211,7 +211,7 @@
   </div>
 </div>
 
-<div id="hint" class="panel"><b>W A S D</b> / arrows drive &nbsp; <b>Space</b> drift<br><b>F</b> fire paint &nbsp; <b>C</b> camera &nbsp; <b>R</b> reset &nbsp; <b>M</b> sound</div>
+<div id="hint" class="panel"><b>W A S D</b> / arrows drive &nbsp; <b>Space</b> drift<br><b>F</b> fire paint &nbsp; <b>C</b> camera &nbsp; <b>R</b> reset &nbsp; <b>M</b> sound<br><b>G</b> graphics</div>
 
 <button id="snd" type="button">Sound on</button>
 
@@ -283,6 +283,35 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SSAOPass.js"></script>
+<script>
+/* Graphics upgrade, part 1: colour management.
+   Colours written as hex/HSL/CSS are sRGB; lighting maths needs linear values. Convert on the way in and back on the way out,
+   mark canvas textures as sRGB, and promote Lambert materials to physically based ones so they pick up the environment map. */
+(function () {
+  var C = THREE.Color.prototype, depth = 0, tmp = new THREE.Color();
+  ['setHex', 'setHSL', 'setStyle'].forEach(function (n) {
+    var orig = C[n];
+    C[n] = function () { depth++; try { orig.apply(this, arguments); } finally { depth--; } if (depth === 0) this.convertSRGBToLinear(); return this; };
+  });
+  ['getHex', 'getHexString', 'getStyle', 'getHSL'].forEach(function (n) {
+    var orig = C[n];
+    C[n] = function () { tmp.copy(this).convertLinearToSRGB(); return orig.apply(tmp, arguments); };
+  });
+  var CT = THREE.CanvasTexture;
+  THREE.CanvasTexture = function (a, b, c, d, e, f, g, h, i) { var t = new CT(a, b, c, d, e, f, g, h, i); t.encoding = THREE.sRGBEncoding; return t; };
+  THREE.MeshLambertMaterial = function (params) { var m = new THREE.MeshStandardMaterial(params); m.roughness = 0.82; m.metalness = 0; return m; };
+})();
+</script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -301,6 +330,9 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(FOG);
   scene.fog = new THREE.Fog(FOG, 140, 1100);
@@ -314,6 +346,8 @@
   sun.shadow.bias = -0.0006;
   scene.add(sun, sun.target);
   const SUN_OFF = new THREE.Vector3(55, 95, 38);
+  const FXC = { hemi: 0.3, sun: 3.2 };   // light balance for the linear, tone-mapped pipeline (the environment map supplies the rest of the ambient)
+  hemi.intensity *= FXC.hemi; sun.intensity *= FXC.sun;
 
   function canvasTex(w, h, draw, rep, aniso) {
     const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -540,7 +574,8 @@
     sg.fillStyle = gr; sg.fillRect(0, 0, 8, 256); sky.material.map.needsUpdate = true;
     drawGround(grassTex.image.getContext('2d'), 512, 512, t); grassTex.needsUpdate = true;
     const kg = kerbTex.image.getContext('2d'); kg.fillStyle = t.kerbA; kg.fillRect(0, 0, 32, 32); kg.fillStyle = t.kerbB; kg.fillRect(0, 32, 32, 32); kerbTex.needsUpdate = true;
-    hemi.color.setHex(t.hemiSky); hemi.groundColor.setHex(t.hemiGround); hemi.intensity = t.hemiI; sun.color.setHex(t.sun); sun.intensity = t.sunI;
+    hemi.color.setHex(t.hemiSky); hemi.groundColor.setHex(t.hemiGround); hemi.intensity = t.hemiI * FXC.hemi; sun.color.setHex(t.sun); sun.intensity = t.sunI * FXC.sun;
+    if (window.__fx) window.__fx.env();
   }
 
   /* ---------- kart model ---------- */
@@ -804,6 +839,7 @@
     else if (e.code === 'KeyF' && !e.repeat) tryFire();
     else if (e.code === 'KeyR' && !e.repeat) resetCar();
     else if (e.code === 'KeyM' && !e.repeat) { initAudio(); setMuted(!muted); }
+    else if (e.code === 'KeyG' && !e.repeat && window.__fx) { const q = window.__fx.cycle(); flash('GRAPHICS', ['LOW', 'MEDIUM', 'HIGH'][q]); }
     else if ((e.code === 'Enter') && state === 'intro') startRace();
   });
   addEventListener('keyup', e => { const m = KEYMAP[e.code]; if (m) { keys[m] = 0; e.preventDefault(); } });
@@ -1756,8 +1792,81 @@
     if (cd <= 0) { state = 'racing'; el.call.style.color = 'var(--go)'; flash('GO', ''); beep(1040, 0.5, 0.16); setTimeout(() => { el.call.style.color = ''; }, 900); }
   }
 
+  /* ---------- Graphics upgrade, parts 2 and 3: environment lighting and post-processing ---------- */
+  const FX = (() => {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envScene = new THREE.Scene();
+    envScene.add(new THREE.Mesh(new THREE.SphereGeometry(60, 32, 16), new THREE.MeshBasicMaterial({ side: THREE.BackSide, map: sky.material.map, fog: false, toneMapped: false })));
+    const sunBall = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 12), new THREE.MeshBasicMaterial({ fog: false, toneMapped: false }));
+    sunBall.position.copy(SUN_OFF).normalize().multiplyScalar(50); envScene.add(sunBall);
+    let envRT = null;
+    function env() {                                   // image-based lighting from the current sky and sun
+      sunBall.material.color.copy(sun.color).multiplyScalar(14);
+      const rt = pmrem.fromScene(envScene, 0.03);
+      scene.environment = rt.texture;
+      if (envRT) envRT.dispose();
+      envRT = rt;
+    }
+    env();
+
+    const hasComposer = !!(THREE.EffectComposer && THREE.RenderPass && THREE.ShaderPass && THREE.UnrealBloomPass);
+    const q = new URLSearchParams(location.search).get('fx');
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    let quality = !hasComposer ? 0 : q != null ? clamp(+q || 0, 0, 2) : coarse ? 1 : 2;   // 0 direct render, 1 bloom + grade + AA, 2 adds ambient occlusion
+    let composer = null, renderPass, ssao, bloom, grade, fxaa;
+    if (hasComposer) {
+      const hf = renderer.capabilities.isWebGL2 || !!renderer.extensions.get('OES_texture_half_float');
+      const rt = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: hf ? THREE.HalfFloatType : THREE.UnsignedByteType });
+      composer = new THREE.EffectComposer(renderer, rt);
+      renderPass = new THREE.RenderPass(scene, camera); composer.addPass(renderPass);
+      if (THREE.SSAOPass && THREE.SimplexNoise && THREE.SSAOShader) {
+        ssao = new THREE.SSAOPass(scene, camera, 1, 1);
+        if (hf) ssao.beautyRenderTarget.texture.type = THREE.HalfFloatType;
+        ssao.kernelRadius = 1.5; ssao.minDistance = 0.00002; ssao.maxDistance = 0.0009;   // depth is normalised over a 3 km far plane
+        ssao.overrideVisibility = function () {          // keep sprites, particles and see-through decals out of the occlusion pass
+          const cache = this._visibilityCache;
+          this.scene.traverse(o => { cache.set(o, o.visible); if (o.isPoints || o.isLine || o.isSprite || (o.material && (o.material.transparent || o.material.depthWrite === false))) o.visible = false; });
+        };
+        composer.addPass(ssao);
+      }
+      bloom = new THREE.UnrealBloomPass(new THREE.Vector2(1, 1), 0.3, 0.5, 0.93); composer.addPass(bloom);
+      grade = new THREE.ShaderPass({                    // linear to sRGB, gentle saturation and contrast, vignette
+        uniforms: { tDiffuse: { value: null } },
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec3 c = max(texture2D(tDiffuse, vUv).rgb, 0.0); float l = dot(c, vec3(0.2126, 0.7152, 0.0722)); c = mix(vec3(l), c, 1.3); c = pow(c, vec3(1.0 / 2.2)); c = (c - 0.5) * 1.12 + 0.5; vec2 d = vUv - 0.5; c *= 1.0 - dot(d, d) * 0.5; gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0); }'
+      });
+      composer.addPass(grade);
+      if (THREE.FXAAShader) { fxaa = new THREE.ShaderPass(THREE.FXAAShader); composer.addPass(fxaa); }
+    }
+    function applyQuality() {
+      if (!composer) return;
+      if (ssao) { ssao.enabled = quality >= 2; renderPass.enabled = !ssao.enabled; }
+    }
+    function resize(w, h) {
+      if (!composer) return;
+      const pr = renderer.getPixelRatio();
+      composer.setPixelRatio(pr); composer.setSize(w, h);
+      if (fxaa) fxaa.material.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
+    }
+    let acc = 0, n = 0, auto = q == null;
+    function render(dtReal) {
+      if (quality > 0 && composer) composer.render(); else renderer.render(scene, camera);
+      if (auto && quality > 0 && document.visibilityState === 'visible') {   // step down if the frame rate cannot hold
+        acc += dtReal; n++;
+        if (n >= 120) { if (acc / n > 0.042) { quality--; applyQuality(); } acc = 0; n = 0; }
+      }
+    }
+    applyQuality();
+    return {
+      env, resize, render,
+      cycle() { auto = false; quality = composer ? (quality + 1) % 3 : 0; if (quality === 2 && !ssao) quality = 0; applyQuality(); return quality; },
+      info: () => ({ quality, composer: !!composer, ssao: !!ssao, env: !!scene.environment })
+    };
+  })();
+  window.__fx = FX;
+
   /* ---------- main loop ---------- */
-  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); FX.resize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
   addEventListener('resize', resize); resize();
   placeAt(START_K, 0); lastK = START_K; progress = START_K - N; locate(car.x, car.z, true);
   kart.position.set(car.x, 0.04, car.z); kart.rotation.y = car.h;
@@ -1766,7 +1875,8 @@
 
   let last = performance.now();
   function frame(now) {
-    const dt = clamp((now - last) / 1000, 0.002, 0.033); last = now;
+    const dtReal = (now - last) / 1000;
+    const dt = clamp(dtReal, 0.002, 0.033); last = now;
     if (state === 'countdown') tickCountdown(dt);
     let spd = 0;
     if (state === 'podium') updatePodium(dt);
@@ -1778,7 +1888,7 @@
     updatePuffs(dt); updateSplats(dt);
     updateCamera(dt, spd);
     updateHud(); drawMap(); updateMarks(); updateFinish(dt);
-    renderer.render(scene, camera);
+    FX.render(dtReal);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
