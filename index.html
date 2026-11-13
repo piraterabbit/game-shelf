@@ -8,33 +8,36 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-appl
 main{max-width:960px;margin:0 auto}
 h1{font-size:clamp(2rem,6vw,3rem);margin:0 0 4px}
 p{color:var(--mut);margin:0 0 24px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
-.card{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:18px 16px;background:var(--card);border:1px solid #2b3240;border-radius:12px;color:inherit;text-decoration:none;transition:background .15s,transform .15s}
-.card:hover,.card:focus-visible{background:var(--hi);transform:translateY(-2px);outline:none;border-color:var(--acc)}
-.t{font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid #2b3240;border-radius:12px;overflow:hidden;color:inherit;text-decoration:none;transition:background .15s,transform .15s}
+.card:hover,.card:focus-visible{background:var(--hi);transform:translateY(-3px);outline:none;border-color:var(--acc)}
+.thumb{position:relative;display:block;aspect-ratio:8/5;background:#0b0d11}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .tag{position:absolute;top:8px;right:8px;background:rgba(15,17,21,.8)}
+.t{font-weight:600;padding:12px 14px}
 .tag{font-size:.7rem;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:99px;background:#2b3240;color:var(--mut)}
-.tag.3d{background:var(--acc);color:#1a1200}
+.thumb .tag.3d{background:var(--acc);color:#1a1200}
 @media (prefers-reduced-motion:reduce){.card{transition:none}}
 </style></head><body><main>
 <h1>Game Shelf</h1><p>19 games</p>
 <div class="grid">
-    <a class="card" href="big-bite-ben/"><span class="t">Big Bite Ben</span><span class="tag 2d">2D</span></a>
-    <a class="card" href="big-table/"><span class="t">Big Table</span><span class="tag 2d">2D</span></a>
-    <a class="card" href="big-table-3d/"><span class="t">Big Table 3D</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="big-toy-room/"><span class="t">Big Toy Room</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="boom-and-box/"><span class="t">Boom and Box</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="brick-baron/"><span class="t">Brick Baron</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="cubinia/"><span class="t">Cubinia</span><span class="tag 2d">2D</span></a>
-    <a class="card" href="ferris-jimmy/"><span class="t">Ferris Jimmy</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="find-gloonah-muffin/"><span class="t">Find Gloonah Muffin</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="find-the-muffins/"><span class="t">Find the Muffins</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="gooner-muffins/"><span class="t">Gooner Muffins</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="hollow-brew/"><span class="t">Hollow Brew</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="maple-hollow/"><span class="t">Maple Hollow</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="paintfall-karting/"><span class="t">PaintFall Karting</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="party-pong-live/"><span class="t">Party Pong Live</span><span class="tag 2d">2D</span></a>
-    <a class="card" href="sunken-bell/"><span class="t">The Sunken Bell</span><span class="tag 2d">2D</span></a>
-    <a class="card" href="sunken-bell-3d/"><span class="t">The Sunken Bell 3D</span><span class="tag 3d">3D</span></a>
-    <a class="card" href="toy-box/"><span class="t">Toy Box</span><span class="tag 2d">2D</span></a>
-    <a class="card" href="wyrmhold/"><span class="t">Wyrmhold</span><span class="tag 3d">3D</span></a>
+    <a class="card" href="big-bite-ben/"><span class="thumb"><img src="thumbs/big-bite-ben.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 2d">2D</span></span><span class="t">Big Bite Ben</span></a>
+    <a class="card" href="big-table/"><span class="thumb"><img src="thumbs/big-table.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 2d">2D</span></span><span class="t">Big Table</span></a>
+    <a class="card" href="big-table-3d/"><span class="thumb"><img src="thumbs/big-table-3d.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Big Table 3D</span></a>
+    <a class="card" href="big-toy-room/"><span class="thumb"><img src="thumbs/big-toy-room.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Big Toy Room</span></a>
+    <a class="card" href="boom-and-box/"><span class="thumb"><img src="thumbs/boom-and-box.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Boom and Box</span></a>
+    <a class="card" href="brick-baron/"><span class="thumb"><img src="thumbs/brick-baron.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Brick Baron</span></a>
+    <a class="card" href="cubinia/"><span class="thumb"><img src="thumbs/cubinia.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 2d">2D</span></span><span class="t">Cubinia</span></a>
+    <a class="card" href="ferris-jimmy/"><span class="thumb"><img src="thumbs/ferris-jimmy.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Ferris Jimmy</span></a>
+    <a class="card" href="find-gloonah-muffin/"><span class="thumb"><img src="thumbs/find-gloonah-muffin.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Find Gloonah Muffin</span></a>
+    <a class="card" href="find-the-muffins/"><span class="thumb"><img src="thumbs/find-the-muffins.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Find the Muffins</span></a>
+    <a class="card" href="gooner-muffins/"><span class="thumb"><img src="thumbs/gooner-muffins.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Gooner Muffins</span></a>
+    <a class="card" href="hollow-brew/"><span class="thumb"><img src="thumbs/hollow-brew.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Hollow Brew</span></a>
+    <a class="card" href="maple-hollow/"><span class="thumb"><img src="thumbs/maple-hollow.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Maple Hollow</span></a>
+    <a class="card" href="paintfall-karting/"><span class="thumb"><img src="thumbs/paintfall-karting.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">PaintFall Karting</span></a>
+    <a class="card" href="party-pong-live/"><span class="thumb"><img src="thumbs/party-pong-live.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 2d">2D</span></span><span class="t">Party Pong Live</span></a>
+    <a class="card" href="sunken-bell/"><span class="thumb"><img src="thumbs/sunken-bell.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 2d">2D</span></span><span class="t">The Sunken Bell</span></a>
+    <a class="card" href="sunken-bell-3d/"><span class="thumb"><img src="thumbs/sunken-bell-3d.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">The Sunken Bell 3D</span></a>
+    <a class="card" href="toy-box/"><span class="thumb"><img src="thumbs/toy-box.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 2d">2D</span></span><span class="t">Toy Box</span></a>
+    <a class="card" href="wyrmhold/"><span class="thumb"><img src="thumbs/wyrmhold.jpg" alt="" loading="lazy" width="480" height="300"><span class="tag 3d">3D</span></span><span class="t">Wyrmhold</span></a>
 </div></main></body></html>
