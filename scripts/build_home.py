@@ -90,8 +90,6 @@ footer{{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fo
   <nav class="bar" aria-label="Filter games">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-f="all" type="button">All<span>{len(games)}</span></button>
-      <button class="tab" role="tab" aria-selected="false" data-f="3D" type="button">3D<span>{n3}</span></button>
-      <button class="tab" role="tab" aria-selected="false" data-f="2D" type="button">2D<span>{n2}</span></button>
     </div>
     <select id="sort" aria-label="Sort games"><option value="az">A to Z</option><option value="za">Z to A</option></select>
   </nav>
