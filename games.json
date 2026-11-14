@@ -12,6 +12,12 @@
     "source": "https://claude.ai/artifact/1Ryon726mzZeFZwdEXN6eE"
   },
   {
+    "slug": "crown-hunters",
+    "title": "Crown Hunters",
+    "tag": "2D",
+    "source": "https://claude.ai/artifact/P7wCa54KyYiaWu34QexT5E"
+  },
+  {
     "slug": "cubinia",
     "title": "Cubinia",
     "tag": "2D",
@@ -30,16 +36,16 @@
     "source": "https://claude.ai/artifact/FSsENXjUo3jFA28aaKinF9"
   },
   {
+    "slug": "goose",
+    "title": "goose, just goose.",
+    "tag": "3D",
+    "source": "https://claude.ai/artifact/B2doh6ytQMbQVCr1GfAQoZ"
+  },
+  {
     "slug": "hollow-brew",
     "title": "Hollow Brew",
     "tag": "3D",
     "source": "https://claude.ai/artifact/G3P6iSu3xzfzEkh8zSdPUF"
-  },
-  {
-    "slug": "long-neck-goose",
-    "title": "Long Neck Goose",
-    "tag": "3D",
-    "source": "https://claude.ai/artifact/B2doh6ytQMbQVCr1GfAQoZ"
   },
   {
     "slug": "maple-hollow",

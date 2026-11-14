@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Long Neck Goose</title>
+<title>goose, just goose.</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -118,7 +118,7 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .pop { animation-duration: 1.2s; } }
 </style>
 
-<canvas id="c" aria-label="Long Neck Goose game"></canvas>
+<canvas id="c" aria-label="goose, just goose."></canvas>
 
 <div class="pops" id="pops"></div>
 
@@ -149,7 +149,7 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
 
 <div class="overlay" id="overlay">
   <div class="card">
-    <h1 id="ovTitle">Long Neck <span>Goose</span></h1>
+    <h1 id="ovTitle">goose, <span>just goose.</span></h1>
     <p id="ovText">You are a goose. Your neck is very long and it is not your problem. It is the garden gnomes' problem.</p>
     <div id="ovBody">
       <div class="keys no-touch">
@@ -339,7 +339,7 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
   scene.add(goose);
 
   /* ---------- Neck (verlet rope) ---------- */
-  var MAXP = 132, SEG = 0.24, START_N = 40;
+  var MAXP = 1500, SEG = 0.24, START_N = 40;
   var P = new Float32Array(MAXP * 3), Q = new Float32Array(MAXP * 3);
   var N = START_N;
   var beads = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), white, MAXP);
@@ -433,7 +433,7 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
       if (i < 7) P[k + 1] += (7 - i) * 0.0009 * (1 - spinK);
     }
     P[0] = a.x; P[1] = a.y; P[2] = a.z; Q[0] = a.x; Q[1] = a.y; Q[2] = a.z;
-    var iters = 14 + (N > 80 ? 6 : 0), it, o;
+    var iters = clamp(Math.round(2400 / N), 6, 18), it, o;
     for (it = 0; it < iters; it++) {
       for (i = 0; i < N - 1; i++) solve(i, i + 1, i === 0);
       for (i = 0; i < N - 2; i++) bend(i, i + 2, i === 0);
@@ -444,7 +444,7 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
         if (P[k + 1] < r) P[k + 1] = r;
         if (P[k] > EDGE) P[k] = EDGE; else if (P[k] < -EDGE) P[k] = -EDGE;
         if (P[k + 2] > EDGE) P[k + 2] = EDGE; else if (P[k + 2] < -EDGE) P[k + 2] = -EDGE;
-        for (o = 0; o < obstaclesAll.length; o++) {
+        for (o = 0; it >= iters - 2 && o < obstaclesAll.length; o++) {
           var ob = obstaclesAll[o], ox = P[k] - ob.x, oz = P[k + 2] - ob.z, md = ob.r + r, dd = ox * ox + oz * oz;
           if (dd < md * md && P[k + 1] < 6) { dd = Math.sqrt(dd) || 1e-4; P[k] = ob.x + ox / dd * md; P[k + 2] = ob.z + oz / dd * md; }
         }
@@ -673,10 +673,10 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
     }
     var wantSpin = playing && (keys.Space || touchSpin) && G.spinE > 0.02;
     var neckLen = (N - 1) * SEG;
-    var spinTarget = wantSpin ? clamp(38 / neckLen, 2.6, 6.5) : 0;
+    var spinMax = clamp(38 / neckLen, 0.4, 6.5), spinTarget = wantSpin ? spinMax : 0;
     G.spinW += (spinTarget - G.spinW) * Math.min(1, dt * (wantSpin ? 4 : 2.2));
     if (wantSpin) G.spinE = Math.max(0, G.spinE - dt * 0.26); else G.spinE = Math.min(1, G.spinE + dt * 0.3);
-    var spinK = clamp(Math.abs(G.spinW) / 3.2, 0, 1);
+    var spinK = clamp(Math.abs(G.spinW) / Math.min(3.2, spinMax), 0, 1);
 
     var fx = -Math.sin(camYaw), fz = -Math.cos(camYaw), rx = Math.cos(camYaw), rz = -Math.sin(camYaw);
     var wx = rx * ix + fx * iy, wz = rz * ix + fz * iy;
