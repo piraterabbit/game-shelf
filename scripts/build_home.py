@@ -69,7 +69,6 @@ footer{{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fo
       <div class="stats"><span><b>{len(games)}</b> games</span><span><b>{n3}</b> in 3D</span><span><b>{n2}</b> in 2D</span></div>
       <div class="actions">
         <button class="btn pri" id="rand" type="button">Play a random game</button>
-        <a class="btn" href="https://github.com/piraterabbit/game-shelf">View on GitHub</a>
       </div>
     </div>
   </header>
