@@ -64,7 +64,7 @@ footer{{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fo
   <header class="top">
     <div>
       <div class="avatar" aria-hidden="true">R</div>
-      <div class="who"><h1>Game Shelf</h1><span class="badge">by Remi</span></div>
+      <div class="who"><h1>Game Shelf</h1><span class="badge">by Remi Alexander</span></div>
       <p class="headline">Browser games you can play right now.</p>
       <div class="stats"><span><b>{len(games)}</b> games</span><span><b>{n3}</b> in 3D</span><span><b>{n2}</b> in 2D</span></div>
       <div class="actions">
@@ -83,7 +83,7 @@ footer{{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);fo
 {cards}
     </div>
   </main>
-  <footer>by Remi</footer>
+  <footer>by Remi Alexander</footer>
 </div>
 <script>
 (function(){{
