@@ -120,7 +120,7 @@ kbd{font-family:var(--body);font-size:11px;font-weight:700;padding:1px 6px;borde
     <button class="modebtn" id="modebtn" type="button"></button>
     <div id="warn"></div>
     <div class="cards" id="cards"></div>
-    <p class="sub" style="font-size:12px;margin-top:12px">[ and ] pick a level. Playing alone? Switch to a bot partner. Pick roles, then press your ready key. Esc pauses, M mutes. Both roles are needed to clear the course.</p>
+    <p class="sub" style="font-size:12px;margin-top:12px">[ and ] pick a level. Playing alone? Switch to a bot partner. Pick roles, then press your ready key. Esc pauses, M mutes, Q toggles graphics quality. Both roles are needed to clear the course.</p>
   </div>
 </div>
 
@@ -136,6 +136,12 @@ kbd{font-family:var(--body);font-size:11px;font-weight:700;padding:1px 6px;borde
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script>
 (function(){
 'use strict';
@@ -147,7 +153,7 @@ if(typeof THREE==='undefined'){
 
 /* ============================== constants ============================== */
 const PW=0.7, PH=0.95, CAMD=20;
-let GRAV=34,GM=1,SPRING_V=22;const JUMP_V=12.8,MOVE=7.2,STEP=1/120;
+let GRAV=34,GM=1,SPRING_V=22;const BOOST_V=16;const JUMP_V=12.8,MOVE=7.2,STEP=1/120;
 const MAX_BOXES=6;
 const E=1e-4;
 const AIMS=[{n:'FLAT',a:12},{n:'LOB',a:45},{n:'HIGH',a:72},{n:'DOWN',a:-88}];
@@ -217,7 +223,8 @@ const SFX={
   go:()=>{tone(440,.1,'square',.06);tone(880,.2,'square',.06,0,.12);},
   spring:()=>tone(260,.28,'sine',.12,520),
   portal:()=>{tone(900,.18,'sine',.09,-600);tone(500,.2,'sine',.09,500,.1);},
-  crumble:()=>noise(.15,.07,900,150)
+  crumble:()=>noise(.15,.07,900,150),
+  boost:()=>{tone(300,.2,'sawtooth',.06,700);noise(.12,.05,3000,800);}
 };
 
 /* ============================== renderer / scene ============================== */
@@ -229,11 +236,50 @@ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 scene.fog=new THREE.Fog(0x2a1330,45,170);
 const camera=new THREE.PerspectiveCamera(40,1,0.5,500);
+let composer=null,bloomPass=null,finalPass=null,quality='high',userQuality=false,perfAcc=0,perfN=0;
+const FinalShader={
+  uniforms:{tDiffuse:{value:null},time:{value:0},res:{value:new THREE.Vector2(1,1)},vig:{value:.85}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader:[
+    'uniform sampler2D tDiffuse;uniform float time;uniform vec2 res;uniform float vig;varying vec2 vUv;',
+    'void main(){',
+    '  vec2 d=vUv-.5;float r=dot(d,d);',
+    '  vec2 ca=d*r*.007;',
+    '  vec3 c=vec3(texture2D(tDiffuse,vUv+ca).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-ca).b);',
+    '  c=c/(1.0+c*.18)*1.18;',
+    '  float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,1.15);',
+    '  c=(c-.5)*1.07+.5;',
+    '  c*=1.0-vig*r*1.5;',
+    '  float g=fract(sin(dot(vUv*res+time,vec2(12.9898,78.233)))*43758.5453)-.5;c+=g*.016;',
+    '  gl_FragColor=vec4(max(c,0.0),1.0);',
+    '}'
+  ].join('\n')
+};
+function buildComposer(){
+  if(!(THREE.EffectComposer&&THREE.RenderPass&&THREE.UnrealBloomPass&&THREE.ShaderPass))return;
+  try{
+    const w=innerWidth,h=innerHeight;
+    let rt=null;
+    if(renderer.capabilities.isWebGL2&&THREE.WebGLMultisampleRenderTarget){rt=new THREE.WebGLMultisampleRenderTarget(w,h,{format:THREE.RGBAFormat});rt.samples=4;}
+    composer=rt?new THREE.EffectComposer(renderer,rt):new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene,camera));
+    bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(w,h),.55,.65,.84);
+    composer.addPass(bloomPass);
+    finalPass=new THREE.ShaderPass(FinalShader);
+    composer.addPass(finalPass);
+  }catch(e){composer=null;}
+}
 function resize(){
   const w=innerWidth,h=innerHeight;
+  renderer.setPixelRatio(quality==='high'?Math.min(window.devicePixelRatio||1,1.5):1);
   renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  if(composer){composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(w,h);finalPass.uniforms.res.value.set(w,h);}
 }
-addEventListener('resize',resize);resize();
+function setQuality(q,auto){
+  quality=q;resize();
+  banner('Graphics: '+(q==='high'?'High':'Low')+(auto?' (auto, Q to switch)':''),1500);
+}
+addEventListener('resize',resize);
 
 const hemi=new THREE.HemisphereLight(0xffb48a,0x38204e,0.95);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff0dd,0.95);
@@ -243,6 +289,14 @@ sun.shadow.bias=-0.0006;
 scene.add(sun);scene.add(sun.target);
 const lavaGlow=new THREE.PointLight(0xff6a22,1.6,46,1.6);scene.add(lavaGlow);
 const flash=new THREE.PointLight(0xffa040,0,36,1.5);scene.add(flash);
+buildComposer();resize();
+let pmrem=null;try{pmrem=new THREE.PMREMGenerator(renderer);}catch(e){pmrem=null;}
+const envCache={};
+function envFor(i){
+  if(!pmrem)return null;
+  if(!envCache[i]){try{const t=THEME_TEX[i].sky.clone();t.mapping=THREE.EquirectangularReflectionMapping;t.needsUpdate=true;envCache[i]=pmrem.fromEquirectangular(t).texture;}catch(e){envCache[i]=null;}}
+  return envCache[i];
+}
 
 /* ---------- procedural textures ---------- */
 let seed=7;function srnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}
@@ -338,7 +392,28 @@ const THEMES=[
   {lava:['#14305a','rgba(120,200,255,.85)','rgba(60,140,255,0)','rgba(0,10,35,.65)'],sky:['#060c18','#10244a','#2a58a0','#90d0ff','#1a4078','#0a1a38','#040810'],fog:0x10244a,side:0xa0b8d8,top:0xc0d8f0,glow:0x50a0ff,ember:0xa0d0ff,crys:[0x50a0ff,0xffffff,0xffd040]},
   {lava:['#4a1a5a','rgba(255,210,100,.85)','rgba(255,150,40,0)','rgba(25,5,35,.65)'],sky:['#0e0418','#341060','#7a2a9a','#ffd080','#5a1a78','#220844','#0a0214'],fog:0x2a1048,side:0xc8a8e0,top:0xe8d0f8,glow:0xffc050,ember:0xffe090,crys:[0xffc050,0xff80ff,0xffffff]},
   {lava:['#5a1008','rgba(255,100,40,.8)','rgba(255,50,10,0)','rgba(20,2,0,.7)'],sky:['#060202','#1a0a06','#3a1a0c','#ff7030','#2a1008','#0c0402','#040101'],fog:0x0c0504,fogNear:6,fogFar:46,hemi:.5,sun:.45,side:0x887060,top:0xa89078,glow:0xff6020,ember:0xff9050,crys:[0xff6020,0xffd040,0xe0e0e0]},
-  {lava:['#e07a3a','rgba(255,255,220,.95)','rgba(255,220,120,0)','rgba(120,40,0,.55)'],sky:['#1a2a6a','#4a6ab0','#f0a080','#fff0c0','#f0b080','#8a6a98','#2a2a60'],fog:0x6a7ab0,fogNear:60,fogFar:250,side:0xfff0e0,top:0xfffaf0,glow:0xffd090,ember:0xffffff,fall:' fell from the summit!',crys:[0xffffff,0xffd070,0xff9ad0]}
+  {lava:['#e07a3a','rgba(255,255,220,.95)','rgba(255,220,120,0)','rgba(120,40,0,.55)'],sky:['#1a2a6a','#4a6ab0','#f0a080','#fff0c0','#f0b080','#8a6a98','#2a2a60'],fog:0x6a7ab0,fogNear:60,fogFar:250,side:0xfff0e0,top:0xfffaf0,glow:0xffd090,ember:0xffffff,fall:' fell from the summit!',crys:[0xffffff,0xffd070,0xff9ad0]},
+  {lava:['#6a2a10','rgba(255,170,70,.85)','rgba(255,100,20,0)','rgba(30,8,0,.65)'],sky:['#0a0a0e','#22222a','#4a4a58','#ff9040','#34343e','#14141a','#06060a'],fog:0x1e1e26,side:0xb8b8c8,top:0xd8d8e8,glow:0xff8a30,ember:0xffb060,crys:[0xff9030,0xffffff,0x60c0ff]},
+  {lava:['#3a4a10','rgba(200,230,80,.8)','rgba(140,200,40,0)','rgba(15,20,0,.7)'],sky:['#0a0e04','#242c10','#4a5a20','#d0e870','#38461a','#161c08','#080a02'],fog:0x1c2410,side:0x9a8a60,top:0xb8a878,glow:0xb0d040,ember:0xe0f080,crys:[0xc0e040,0xffd060,0xffffff]},
+  {lava:['#9a0a0a','rgba(255,90,60,.9)','rgba(255,40,20,0)','rgba(40,0,0,.7)'],sky:['#120204','#3a0810','#8a1018','#ff6040','#5a0a10','#240408','#0e0204'],fog:0x300a0e,side:0xc09090,top:0xe0b0b0,glow:0xff3020,ember:0xff8060,fall:' was swallowed by the lava!',crys:[0xff5040,0xffd0a0,0xffffff]},
+  {lava:['#6a4a10','rgba(255,220,100,.85)','rgba(255,170,30,0)','rgba(35,22,0,.65)'],sky:['#0e0a04','#30240c','#6a4e1a','#ffd870','#4a3612','#1c1406','#0a0802'],fog:0x2a200c,side:0xd0b078,top:0xe8d098,glow:0xffc040,ember:0xffe090,crys:[0xffc040,0xffffff,0xff8040]},
+  {lava:['#0a3a7a','rgba(120,220,255,.85)','rgba(40,160,255,0)','rgba(0,12,40,.65)'],sky:['#04122a','#0c3a6a','#2a78b0','#a0f0ff','#1a5a90','#082848','#040e1e'],fog:0x0c3060,side:0xa8c8e0,top:0xc8e4f4,glow:0x40b0ff,ember:0xc0f0ff,fall:' was swept under!',crys:[0x40d0ff,0xffffff,0xffe080]},
+  {lava:['#2a3a5a','rgba(200,230,255,.8)','rgba(140,190,255,0)','rgba(8,12,30,.65)'],sky:['#080a14','#1e2a48','#46608c','#d0e4ff','#2a3c64','#101828','#060810'],fog:0x1a2440,side:0xa8b0c8,top:0xc8d0e8,glow:0x80a8ff,ember:0xe0f0ff,crys:[0xa0c8ff,0xffffff,0xc0a0ff]},
+  {lava:['#5a2208','rgba(255,150,60,.8)','rgba(255,90,20,0)','rgba(20,6,0,.7)'],sky:['#050302','#14100a','#2a1c10','#ff9a40','#20140a','#0a0604','#040201'],fog:0x0a0604,fogNear:6,fogFar:46,hemi:.5,sun:.45,side:0x807468,top:0xa09484,glow:0xff9030,ember:0xffc070,crys:[0xff9030,0xffe060,0xe0e0e0]},
+  {lava:['#f0c8e0','rgba(255,255,255,.95)','rgba(255,255,255,0)','rgba(200,150,200,.45)'],sky:['#3a3a8a','#7a7ac8','#f8b0c8','#fff0d8','#f0b8d0','#9a80b8','#3a3a78'],fog:0x8a88c8,fogNear:60,fogFar:250,side:0xf0e8ff,top:0xfff8ff,glow:0xffc8e0,ember:0xffffff,fall:' dropped through the clouds!',crys:[0xffffff,0xffc0e0,0xc0e0ff]},
+  {lava:['#2a2250','rgba(190,170,255,.75)','rgba(130,110,255,0)','rgba(8,5,30,.7)'],sky:['#02020a','#0c0a28','#201a52','#a090ff','#161038','#080620','#020208'],fog:0x0e0a2a,fogNear:50,fogFar:220,side:0xa8a0c0,top:0xc8c0e0,glow:0x8070ff,ember:0xe0d8ff,fall:' drifted into the void!',crys:[0xa090ff,0xffffff,0x80e0ff]},
+  {lava:['#c02a1a','rgba(255,240,140,.95)','rgba(255,170,40,0)','rgba(90,10,5,.6)'],sky:['#1a1040','#5a2a70','#e0604a','#ffe090','#d0503a','#6a2848','#240c38'],fog:0x5a2a48,fogNear:60,fogFar:240,side:0xffd8c0,top:0xffece0,glow:0xffb060,ember:0xfff0b0,fall:' was swallowed by the lava!',crys:[0xffe070,0xff7050,0xffffff]},
+  {lava:['#8a4a20','rgba(255,210,150,.85)','rgba(255,150,70,0)','rgba(50,20,5,.65)'],sky:['#2a1a18','#7a4a40','#d88a60','#ffe0b0','#c07850','#5a3028','#2a1a18'],fog:0x6a4a3c,fogNear:50,fogFar:200,side:0xe0c8a0,top:0xf0dcc0,glow:0xffb070,ember:0xffe0c0,crys:[0xffc080,0xffffff,0x80d0ff]},
+  {lava:['#3a1a4a','rgba(220,150,255,.8)','rgba(170,90,255,0)','rgba(15,5,25,.7)'],sky:['#0a0614','#2a1a44','#5a3a80','#e0b0ff','#3a2460','#160c2a','#08040f'],fog:0x1e1236,side:0xb0a8c0,top:0xd0c8e0,glow:0xc080ff,ember:0xe8c0ff,crys:[0xc080ff,0xffe080,0xffffff]},
+  {lava:['#0a1a3a','rgba(80,255,200,.9)','rgba(20,220,160,0)','rgba(0,8,20,.65)'],sky:['#02060e','#0a1e3c','#1a5a7a','#80ffe0','#0e3a50','#061622','#02060a'],fog:0x082030,side:0xa0c8d8,top:0xc8e8f4,glow:0x40ffc0,ember:0x80ffe0,crys:[0x40ffc0,0xff4080,0xffffff]},
+  {lava:['#2a6aaa','rgba(220,240,255,.9)','rgba(160,210,255,0)','rgba(10,30,70,.5)'],sky:['#1a3a7a','#4a88d0','#a8d8f8','#ffffff','#80b8e8','#3a6aa8','#183060'],fog:0x5a88c8,fogNear:60,fogFar:240,side:0xe8f0ff,top:0xffffff,glow:0xc0e0ff,ember:0xffffff,fall:' was blown away!',crys:[0xffffff,0x80c0ff,0xffe0a0]},
+  {lava:['#2a4a2a','rgba(160,255,140,.8)','rgba(90,220,70,0)','rgba(5,20,5,.65)'],sky:['#061008','#143018','#2a6a34','#a0ff90','#1a4a24','#0a2010','#040a06'],fog:0x143a1c,side:0x98b890,top:0xb8d8b0,glow:0x70ff60,ember:0xc0ffa0,crys:[0x70ff60,0xffe060,0xffffff]},
+  {lava:['#3a3a5a','rgba(190,200,255,.8)','rgba(120,140,255,0)','rgba(8,8,25,.65)'],sky:['#0c0c1c','#242444','#4a4a82','#c0c8ff','#30305a','#14142a','#080814'],fog:0x1c1c3a,side:0xa8a8c8,top:0xc8c8e8,glow:0x8090ff,ember:0xe0e4ff,crys:[0x8090ff,0xffffff,0xffe080]},
+  {lava:['#6a1a0a','rgba(255,160,60,.9)','rgba(255,90,20,0)','rgba(25,5,0,.7)'],sky:['#0a0402','#2a1008','#6a2810','#ffa040','#4a1c0a','#180804','#080302'],fog:0x240c06,side:0xc8a088,top:0xe0b8a0,glow:0xff8a30,ember:0xffc080,crys:[0xff8a30,0xffe060,0xffffff]},
+  {lava:['#2a1a3a','rgba(255,180,120,.8)','rgba(255,120,60,0)','rgba(15,5,20,.7)'],sky:['#0c0a14','#2a2038','#5a4058','#ffc090','#3a2844','#18101e','#08060c'],fog:0x1e1428,side:0xb0a0b0,top:0xd0c0d0,glow:0xffa070,ember:0xffd0a0,crys:[0xffa070,0xc080ff,0xffffff]},
+  {lava:['#1a5a8a','rgba(255,240,200,.9)','rgba(255,200,120,0)','rgba(10,30,60,.55)'],sky:['#2a4a9a','#6a9ad8','#ffc8a0','#fff4d0','#f8c890','#a07a98','#303068'],fog:0x7a9ad0,fogNear:60,fogFar:250,side:0xfff0e0,top:0xfffaf0,glow:0xffe0a0,ember:0xffffff,fall:' fell from the highway!',crys:[0xffffff,0xffd070,0x80c0ff]},
+  {lava:['#7a0a2a','rgba(255,120,160,.9)','rgba(255,50,100,0)','rgba(30,0,10,.7)'],sky:['#14020a','#3a0a20','#8a1a40','#ff6090','#5a1030','#240814','#0e0208'],fog:0x30081c,side:0xd0a0b0,top:0xf0c0d0,glow:0xff4070,ember:0xffa0c0,fall:' was swallowed by the lava!',crys:[0xff6090,0xffe080,0xffffff]},
+  {lava:['#5a1020','rgba(255,110,90,.85)','rgba(255,60,40,0)','rgba(25,3,8,.7)'],sky:['#0a0608','#26141c','#5a2a38','#ff7060','#3a1a24','#160a10','#080406'],fog:0x241018,side:0xc0a0a8,top:0xe0c0c8,glow:0xff5040,ember:0xffa090,fall:' was swallowed by the lava!',crys:[0xff6050,0xffffff,0xffd060]}
 ];
 const THEME_TEX=THEMES.map(function(t){return {lava:makeLava(t.lava),sky:makeSky(t.sky)};});
 const texLava=THEME_TEX[0].lava,texSky=THEME_TEX[0].sky;
@@ -350,6 +425,13 @@ const texBelt=cTex(64,function(g,S){
   g.strokeStyle='rgba(255,210,59,.45)';
   g.beginPath();g.moveTo(S/2+8,10);g.lineTo(S-6,S/2);g.lineTo(S/2+8,S-10);g.stroke();
 },true);
+const texBump=cTex(128,function(g,S){
+  g.fillStyle='#808080';g.fillRect(0,0,S,S);
+  for(let i=0;i<420;i++){const v=(srnd()*90+80)|0;g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(srnd()*S,srnd()*S,2+srnd()*9,2+srnd()*6);}
+  g.strokeStyle='#202020';g.lineWidth=4;
+  for(let y=0;y<=S;y+=64){g.beginPath();g.moveTo(0,y);g.lineTo(S,y);g.stroke();}
+  for(let r=0;r<2;r++){const off=r*32;for(let x=off;x<=S+32;x+=64){g.beginPath();g.moveTo(x,r*64);g.lineTo(x,r*64+64);g.stroke();}}
+},true);
 const haloTex=cTex(64,function(g,S){
   const gr=g.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');
@@ -357,12 +439,15 @@ const haloTex=cTex(64,function(g,S){
 },false);
 /* ---------- shared materials / geometry ---------- */
 const M={
-  side:new THREE.MeshStandardMaterial({map:texStone,roughness:.95}),
-  top:new THREE.MeshStandardMaterial({map:texTop,roughness:.85}),
+  side:new THREE.MeshStandardMaterial({map:texStone,bumpMap:texBump,bumpScale:1.6,roughness:.9,metalness:.02,envMapIntensity:.4}),
+  top:new THREE.MeshStandardMaterial({map:texTop,bumpMap:texBump,bumpScale:1.2,roughness:.78,metalness:.03,envMapIntensity:.4}),
   brick:new THREE.MeshStandardMaterial({map:texBrick,roughness:.8,emissive:0x3a1206,emissiveIntensity:.8}),
-  crate:new THREE.MeshStandardMaterial({map:texCrate,roughness:.8}),
-  iceSide:new THREE.MeshStandardMaterial({color:0x7cc4f0,roughness:.2,metalness:.1,emissive:0x0c2a48,flatShading:true}),
-  iceTop:new THREE.MeshStandardMaterial({color:0x9fd8f5,roughness:.1,metalness:.15,emissive:0x153a58}),
+  crate:new THREE.MeshStandardMaterial({map:texCrate,roughness:.7,envMapIntensity:.4}),
+  iceSide:new THREE.MeshStandardMaterial({map:texStone,bumpMap:texBump,bumpScale:1.2,color:0x4a98d8,roughness:.4,metalness:.05,emissive:0x04101c,envMapIntensity:.3}),
+  iceTop:new THREE.MeshStandardMaterial({map:texTop,bumpMap:texBump,bumpScale:.9,color:0x5aa8e0,roughness:.3,metalness:.05,emissive:0x04141f,envMapIntensity:.3}),
+  boostTop:new THREE.MeshStandardMaterial({map:texBelt,color:0xffd060,emissive:0x553300,roughness:.5}),
+  mudSide:new THREE.MeshStandardMaterial({map:texStone,bumpMap:texBump,bumpScale:1.4,color:0x6a4a30,roughness:1}),
+  mudTop:new THREE.MeshStandardMaterial({map:texTop,bumpMap:texBump,bumpScale:1.6,color:0x7a5638,roughness:1}),
   crumbleSide:new THREE.MeshStandardMaterial({map:texStone,color:0xb08860,roughness:1}),
   crumbleTop:new THREE.MeshStandardMaterial({map:texTop,color:0xe0b880,roughness:.9}),
   mover:new THREE.MeshStandardMaterial({color:0x4a5d78,roughness:.4,metalness:.5,emissive:0x0a2a3a}),
@@ -374,7 +459,22 @@ const M={
 const boxGeo=new THREE.BoxGeometry(1,1,1);
 const coneGeo=new THREE.ConeGeometry(1,1,5);
 const sphGeo=new THREE.SphereGeometry(1,16,12);
-const lavaMat=new THREE.MeshBasicMaterial({map:texLava,color:0xffe0c0,fog:false});
+const lavaMat=new THREE.ShaderMaterial({
+  uniforms:{tMap:{value:texLava},time:{value:0}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader:[
+    'uniform sampler2D tMap;uniform float time;varying vec2 vUv;',
+    'void main(){',
+    '  vec2 uv=vUv*vec2(110.0,22.0);',
+    '  vec2 w=vec2(sin(uv.y*.9+time*.7),cos(uv.x*.6+time*.55))*.05;',
+    '  vec3 a=texture2D(tMap,uv+vec2(time*.015,time*.024)+w).rgb;',
+    '  vec3 b=texture2D(tMap,uv*.62+vec2(-time*.02,time*.012)-w).rgb;',
+    '  vec3 c=a*(.42+.62*b);',
+    '  float pulse=.86+.14*sin(time*1.6+uv.x*.17+uv.y*.31);',
+    '  gl_FragColor=vec4(c*1.08*pulse,1.0);',
+    '}'
+  ].join('\n')
+});
 function scaleUV(geo,w,h,d,tile){
   const uv=geo.attributes.uv,dims=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
   for(let f=0;f<6;f++)for(let i=0;i<4;i++){const k=f*4+i;uv.setXY(k,uv.getX(k)*dims[f][0]/tile,uv.getY(k)*dims[f][1]/tile);}
@@ -392,6 +492,18 @@ function labelSprite(text,bg,fg,w,h,sc){
 /* ---------- static backdrop ---------- */
 const sky=new THREE.Mesh(new THREE.SphereGeometry(300,24,16),new THREE.MeshBasicMaterial({map:texSky,side:THREE.BackSide,fog:false,depthWrite:false}));
 sky.renderOrder=-10;scene.add(sky);
+const shaftTex=cTex(64,function(g,S){
+  const gx=g.createLinearGradient(0,0,S,0);gx.addColorStop(0,'rgba(255,255,255,0)');gx.addColorStop(.5,'rgba(255,255,255,1)');gx.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gx;g.fillRect(0,0,S,S);
+  g.globalCompositeOperation='destination-in';
+  const gy=g.createLinearGradient(0,0,0,S);gy.addColorStop(0,'rgba(255,255,255,0)');gy.addColorStop(.4,'rgba(255,255,255,.9)');gy.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gy;g.fillRect(0,0,S,S);
+},false);
+const shafts=[];
+for(let i=0;i<12;i++){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(rnd(7,13),70),new THREE.MeshBasicMaterial({map:shaftTex,color:0xffffff,transparent:true,opacity:rnd(.05,.11),blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+  m.userData.bx=-60+i*38+rnd(-8,8);m.position.set(m.userData.bx,14,-rnd(24,46));m.rotation.z=-.28+rnd(-.1,.1);m.renderOrder=-5;scene.add(m);shafts.push(m);
+}
 const lavaSea=new THREE.Mesh(new THREE.PlaneGeometry(520,150),lavaMat);
 lavaSea.rotation.x=-Math.PI/2;lavaSea.position.set(130,-0.3,-30);scene.add(lavaSea);
 (function(){
@@ -482,15 +594,15 @@ const LEVELS=[
   block(12,0,14,2);
   hint(15,'BOX: press your action key to place a crate. Hold DOWN + action at a lava edge to lay a bridge.');
   ground(21,28);
-  ground(35,62);
+  ground(35,64);
   cp(38,0);
   hint(40,'BOOM: throw an explosive at the cracked wall. Hold to charge, tap your aim key to change angle.');
   bricks(46,0,2,4);
   crawler(51,57,0);
   spikes(58,60,0);
   cp(61,0);
-  plat(63.2,64.8,0);
-  plat(66.2,67.8,0);
+  plat(65.8,67.4,0);
+  plat(68.4,70,0);
   hint(66,'Stepping stones. A crawler can be stomped from above, or blown up.');
   ground(70,90);
   hint(71,'Pressure plates hold doors open while something sits on them. BOX can leave a crate on one.');
@@ -837,8 +949,8 @@ const LEVELS=[
     let e=a+18;h.spring(e,e+2,8);
     let b=e+3;h.ledge(b,16,14);h.cp(b+2,14);h.crawler(b+5,b+12,14);
     let u=h.up(b+16,4,16);let rx=u.x+1.6;
-    h.ledge(rx,16,22);h.cp(rx+2,22);h.bricks(rx+8,22,1,3);h.spikes(rx+12,rx+14,22);
-    rx+=16;h.hint(rx-3,'The last gap. Bridge it and reach the top!');rx+=9;
+    h.ledge(rx,18,22);h.cp(rx+2,22);h.bricks(rx+6,22,1,3);h.crawler(rx+9,rx+16,22);
+    rx+=18;h.hint(rx-3,'The last gap. Bridge it and reach the top!');rx+=9;
     h.ledge(rx,22,22);h.goal(rx+12,22);
   }},
   {name:'Moon Walk',theme:THEMES[20],gravity:.5,build:function(h){
@@ -992,8 +1104,267 @@ const LEVELS=[
     let e=a+16;h.spring(e,e+2,8);
     let b=e+4;h.ledge(b,16,14);h.cp(b+2,14);
     let s=h.stairs(b+16,4,16,2,2,3);
-    let rx=s.x+2;h.ledge(rx,16,22);h.cp(rx+2,22);h.bricks(rx+8,22,1,3);h.spikes(rx+12,rx+14,22);
-    rx+=16;h.hint(rx-3,'The last gap. Bridge it and take the summit!');rx+=9;
+    let rx=s.x+2;h.ledge(rx,18,22);h.cp(rx+2,22);h.bricks(rx+6,22,1,3);h.crawler(rx+9,rx+16,22);
+    rx+=18;h.hint(rx-3,'The last gap. Bridge it and take the summit!');rx+=9;
+    h.ledge(rx,22,22);h.goal(rx+12,22);
+  }},
+  {name:'Gate Keepers',theme:THEMES[30],build:function(h){
+    h.hint(0,'Level 31: Gate Keepers. Gates open and shut on a rhythm. Wait for yours, then run.');
+    let x=h.flat(-14,34);h.crawler(8,14,0);
+    let g=x;x=h.flat(x,32);h.cp(g+2,0);h.gate(g+9,0,9,5,2.6,0);h.gate(g+17,0,9,5,2.6,1.7);h.crawler(g+21,g+30,0);
+    x+=8;
+    g=x;x=h.flat(x,46);h.cp(g+2,0);h.bricks(g+8,0,2,4);h.gate(g+16,0,9,4.6,2.4,0);h.crusher(g+22,g+25,4.2,0,1.4);h.gate(g+31,0,9,4.6,2.4,2.3);h.spikes(g+37,g+40,0);
+    x=h.stones(x,8);
+    g=x;x=h.flat(x,80);h.cp(g+2,0);h.gate(g+8,0,9,5,2.6,0);h.pspikes(g+14,g+18,0,3,1.5,0);h.gate(g+24,0,9,4.6,2.4,1.2);h.block(g+32,0,g+34,5.5);h.crawler(g+38,g+46,0);h.gate(g+50,0,9,4.6,2.4,0);h.crusher(g+56,g+59,4.2,2,1.4);
+    h.plate(g+62,g+63.4,0,'A',0xff4fd8);h.door(g+69,0,9,'A',0xff4fd8);h.goal(g+73);
+  }},
+  {name:'Mud Bog',theme:THEMES[31],build:function(h){
+    h.hint(0,'Level 32: Mud Bog. The brown floor slows you to a crawl. Jump early!');
+    let x=h.flat(-14,30);h.crawler(8,14,0);
+    let g=x;x=h.mudFlat(x,34);h.cp(g+2,0);h.crawler(g+8,g+16,0);h.spikes(g+22,g+24,0);h.bricks(g+28,0,2,4);
+    x=h.flat(x,10);x+=8;
+    g=x;x=h.mudFlat(x,40);h.cp(g+2,0);h.crawler(g+8,g+18,0);h.block(g+24,0,g+26,5.5);h.spikes(g+31,g+33,0);
+    x=h.flat(x,10);x=h.stones(x,8);
+    g=x;x=h.mudFlat(x,30);h.crawler(g+6,g+14,0);h.spikes(g+18,g+20,0);h.bricks(g+24,0,2,4);
+    g=x;x=h.flat(x,48);h.cp(g+2,0);h.plate(g+10,g+11.4,0,'A',0xff4fd8);h.door(g+17,0,9,'A',0xff4fd8);h.goal(g+26);
+  }},
+  {name:'Rising Tide',theme:THEMES[32],rise:{start:-6,speed:.6},build:function(h){
+    h.hint(0,'Level 33: Rising Tide. The lava is rising! Climb, and do not stop.');
+    let x=h.flat(-14,22);
+    let u=h.up(x,7,2);let rx=u.x+1.6;
+    h.ledge(rx,10,14);h.cp(rx+2,14);h.crawler(rx+4,rx+9,14);
+    let ex=rx+10;h.spring(ex,ex+2,14);h.ledge(ex+3,14,20);h.cp(ex+5,20);
+    u=h.up(ex+17,5,22);rx=u.x+1.6;
+    h.ledge(rx,12,30);h.cp(rx+2,30);h.spikes(rx+6,rx+8,30);
+    rx+=12;h.hint(rx-4,'A gap. BOX: bridge it fast. The lava is coming!');rx+=9;
+    h.ledge(rx,14,30);h.cp(rx+2,30);h.crawler(rx+5,rx+12,30);
+    u=h.up(rx+14,4,32);rx=u.x+1.6;
+    h.ledge(rx,20,38);h.cp(rx+2,38);h.goal(rx+10,38);
+  }},
+  {name:'Clockwork',theme:THEMES[33],build:function(h){
+    const PI=Math.PI;
+    h.hint(0,'Level 34: Clockwork. Gates, belts and lifts each keep their own time.');
+    let x=h.flat(-14,30);h.crawler(8,14,0);
+    x=h.beltFlat(x,12,3.5);
+    let g=x;x=h.flat(x,26);h.cp(g+2,0);h.gate(g+8,0,9,5,2.6,0);h.gate(g+16,0,9,5,2.6,2);h.crawler(g+20,g+25,0);
+    h.lift(x+1.5,4,4,3,-PI/2,.55);
+    let a=x+3;h.ledge(a,12,8);h.cp(a+2,8);h.pspikes(a+6,a+9,8,3,1.5,0);
+    let e=a+12;h.lift(e+1.5,4,4,3,PI/2,.55);
+    g=e+3;x=h.flat(g,20);h.cp(g+2,0);h.bricks(g+8,0,2,4);
+    x=h.beltFlat(x,10,-3);
+    g=x;x=h.flat(x,40);h.cp(g+2,0);h.crusher(g+8,g+11,4.2,0,1.4);h.gate(g+16,0,9,4.6,2.4,1);h.spikes(g+22,g+25,0);h.block(g+30,0,g+32,5.5);
+    x=h.chain(x,2);
+    g=x;x=h.flat(x,56);h.cp(g+2,0);h.gate(g+8,0,9,5,2.6,0);h.pspikes(g+14,g+18,0,3,1.5,1.5);h.crawler(g+22,g+30,0);h.bricks(g+36,0,2,4);
+    h.plate(g+42,g+43.4,0,'A',0xff4fd8);h.door(g+49,0,9,'A',0xff4fd8);h.goal(g+53);
+  }},
+  {name:'Flood Run',theme:THEMES[34],rise:{start:-4,speed:.3},build:function(h){
+    h.hint(0,'Level 35: Flood Run. The lava rises slowly but never stops. Keep climbing and moving on.');
+    let x=h.flat(-14,30);h.crawler(8,14,0);
+    let top=0;
+    for(let k=0;k<5;k++){
+      const u=h.up(x,2,top+2);top=u.top;
+      const g=u.x+1.6;h.ledge(g,20,top);h.cp(g+2,top);h.crawler(g+6,g+12,top);h.spikes(g+15,g+17,top);
+      x=g+20;
+      if(k%2===1){h.ledge(x+9,14,top);x=x+9+14;}
+    }
+    h.ledge(x,26,top);h.goal(x+10,top);
+  }},
+  {name:'Mud and Ice',theme:THEMES[35],build:function(h){
+    h.hint(0,'Level 36: Mud and Ice. Slow as mud, slippery as ice. The floor keeps changing.');
+    let x=h.flat(-14,30);h.crawler(8,14,0);
+    let g=x;x=h.mudFlat(x,28);h.crawler(g+8,g+16,0);h.bricks(g+22,0,2,4);
+    x=h.flat(x,6);
+    g=x;x=h.iceFlat(x,34);h.cp(g+2,0);h.spikes(g+10,g+13,0);h.crawler(g+17,g+25,0);
+    x=h.flat(x,10);x+=8;
+    g=x;x=h.mudFlat(x,26);h.cp(g+2,0);h.block(g+12,0,g+14,5.5);h.spikes(g+19,g+21,0);
+    x=h.flat(x,4);
+    g=x;x=h.iceFlat(x,30);h.crawler(g+6,g+14,0);h.pspikes(g+18,g+22,0,3,1.5,0);
+    x=h.flat(x,10);x=h.stones(x,8);
+    g=x;x=h.mudFlat(x,22);h.cp(g+2,0);h.bricks(g+12,0,2,4);
+    g=x;x=h.flat(x,46);h.cp(g+2,0);h.plate(g+10,g+11.4,0,'A',0xff4fd8);h.door(g+17,0,9,'A',0xff4fd8);h.goal(g+26);
+  }},
+  {name:'Gate Gauntlet',theme:THEMES[36],build:function(h){
+    h.hint(0,'Level 37: Gate Gauntlet. Dark tunnels full of gates, crushers and spikes. Watch the rhythm.');
+    let x=h.flat(-14,50);h.ceil(-14,36,7,4);
+    [2,14,26].forEach(function(lx){h.lamp(lx,6.3);});
+    h.crawler(8,14,0);h.cp(10,0);h.gate(18,0,7,5,2.6,0);h.pspikes(24,28,0,3,1.5,1);
+    x+=8;h.ceil(36,44,7,4);h.lamp(40,6.3);
+    let g=x;x=h.flat(x,44);h.ceil(g,g+44,7,4);
+    [4,18,32].forEach(function(lx){h.lamp(g+lx,6.3);});
+    h.cp(g+2,0);h.bricks(g+8,0,2,4);h.gate(g+16,0,7,4.6,2.4,0);h.crusher(g+22,g+25,4.2,0,1.4);h.gate(g+30,0,7,4.6,2.4,2.3);h.crawler(g+34,g+42,0);
+    g=x;x=h.flat(x,40);h.ceil(g,g+40,3.7,4);
+    [6,20,32].forEach(function(lx){h.lamp(g+lx,3.1);});
+    h.cp(g+2,0);h.gate(g+10,0,3.7,4.6,2.4,0);h.pspikes(g+16,g+19,0,3,1.5,0);h.plate(g+24,g+25.4,0,'A',0xff4fd8);h.door(g+31,0,3.7,'A',0xff4fd8);
+    x=h.chain(x,2);h.ceil(g+40,g+60,7,4);h.lamp(g+46,6.3);h.lamp(g+56,6.3);
+    g=x;x=h.flat(x,64);h.cp(g+2,0);h.block(g+9,0,g+11,5.5);h.gate(g+18,0,9,4.6,2.4,1);h.crusher(g+24,g+27,4.2,0,1.4);h.bricks(g+32,0,2,4);h.crawler(g+36,g+44,0);
+    h.plate(g+48,g+49.4,0,'B',0x9bff3c);h.door(g+55,0,9,'B',0x9bff3c);h.goal(g+59);
+  }},
+  {name:'Cloud Rise',theme:THEMES[37],rise:{start:-6,speed:.45},build:function(h){
+    h.hint(0,'Level 38: Cloud Rise. Springs and crumbling slabs, with the clouds rising behind you.');
+    let x=h.flat(-14,24);h.spring(x,x+2,0);
+    h.ledge(x+4,14,6);h.cp(x+6,6);h.crawler(x+9,x+14,6);
+    let e=x+18;h.spring(e,e+2,6);h.ledge(e+4,14,12);h.cp(e+6,12);
+    let c=h.crumbUp(e+18,5,14);
+    let rx=c.x+2;h.ledge(rx,12,22);h.cp(rx+2,22);h.spikes(rx+6,rx+8,22);
+    e=rx+12;h.spring(e,e+2,22);h.ledge(e+4,14,28);h.cp(e+6,28);
+    c=h.crumbUp(e+18,4,30);rx=c.x+2;
+    h.ledge(rx,16,36);h.cp(rx+2,36);h.goal(rx+8,36);
+  }},
+  {name:'Moon Mud',theme:THEMES[38],gravity:.5,build:function(h){
+    h.hint(0,'Level 39: Moon Mud. Low gravity in the mud: bounce along, but the gates still keep time.');
+    let x=h.flat(-14,30);h.crawler(8,14,0);
+    x+=10;
+    let g=x;x=h.mudFlat(x,30);h.cp(g+2,0);h.crawler(g+8,g+16,0);h.gate(g+20,0,12,5,2.6,0);h.spikes(g+24,g+28,0);
+    x=h.flat(x,8);x+=12;
+    g=x;x=h.mudFlat(x,34);h.cp(g+2,0);h.bricks(g+10,0,2,6);h.crawler(g+16,g+24,0);h.gate(g+28,0,12,5,2.6,1.5);
+    x=h.flat(x,10);
+    g=x;x=h.flat(x,56);h.cp(g+2,0);h.block(g+9,0,g+11,9);h.spikes(g+18,g+26,0);h.crawler(g+29,g+36,0);
+    h.plate(g+40,g+41.4,0,'A',0xff4fd8);h.door(g+47,0,12,'A',0xff4fd8);h.goal(g+51);
+  }},
+  {name:'The Summit',theme:THEMES[39],rise:{start:-6,speed:.5},build:function(h){
+    h.hint(0,'Level 40: The Summit. The final climb, with rising lava, gates and falling slabs. Go!');
+    let x=h.flat(-14,24);
+    let u=h.up(x,6,2);let rx=u.x+1.6;
+    h.ledge(rx,12,12);h.cp(rx+2,12);h.gate(rx+7,12,9,4.6,2.4,0);
+    let e=rx+12;h.spring(e,e+2,12);h.ledge(e+4,14,18);h.cp(e+6,18);
+    let c=h.crumbUp(e+18,5,20);rx=c.x+2;
+    h.ledge(rx,12,28);h.cp(rx+2,28);h.gate(rx+7,28,9,4.6,2.4,1.2);
+    rx+=12;rx+=9;
+    h.ledge(rx,14,28);h.cp(rx+2,28);h.bricks(rx+7,28,1,3);
+    u=h.up(rx+14,4,30);rx=u.x+1.6;
+    h.ledge(rx,22,36);h.cp(rx+2,36);h.goal(rx+12,36);
+  }},
+  {name:'Wind Canyon',theme:THEMES[40],build:function(h){
+    h.hint(0,'Level 41: Wind Canyon. Gusts push you sideways. Ride a tailwind to jump farther, and lean into a headwind.');
+    let x=h.flat(-14,34);h.crawler(6,11,0);
+    h.wind(17,34,-6,10,6);x+=9;
+    let g=x;x=h.flat(x,30);h.cp(g+2,0);h.wind(g+4,g+15,-1,8,-2.5);h.crawler(g+6,g+13,0);h.spikes(g+19,g+21,0);h.bricks(g+25,0,2,4);
+    h.hint(g+20,'This gust comes and goes. Time your jump with it.');
+    x=h.flat(x,8);h.wind(x-6,x+10,-6,10,6,5,2.5,0);x+=9;
+    g=x;x=h.flat(x,40);h.cp(g+2,0);h.block(g+10,0,g+12,5.5);h.wind(g+16,g+26,-1,6,-3,4,2,1);h.crawler(g+19,g+26,0);h.spikes(g+34,g+36,0);
+    x=h.stones(x,8);
+    g=x;x=h.flat(x,62);h.cp(g+2,0);h.wind(g+4,g+11,-1,8,-3);h.bricks(g+13,0,2,4);h.crawler(g+19,g+27,0);h.spikes(g+34,g+37,0);
+    h.plate(g+42,g+43.4,0,'A',0xff4fd8);h.door(g+49,0,9,'A',0xff4fd8);h.goal(g+55);
+  }},
+  {name:'Drawbridge Keep',theme:THEMES[41],build:function(h){
+    h.hint(0,'Level 42: Drawbridge Keep. Weigh down the plate to lower the bridge. Something has to stay on it.');
+    let x=h.flat(-14,36);h.crawler(8,14,0);
+    h.plate(15,16.4,0,'A',0xff4fd8);h.bridge(x,x+8,'A',0xff4fd8);x+=8;
+    let g=x;x=h.flat(x,28);h.cp(g+2,0);h.bricks(g+9,0,2,4);h.crawler(g+13,g+22,0);
+    h.plate(x-10,x-8.6,0,'B',0x9bff3c);h.bridge(x,x+10,'B',0x9bff3c);x+=10;
+    g=x;x=h.flat(x,32);h.cp(g+2,0);h.spikes(g+8,g+11,0);h.block(g+16,0,g+18,5.5);h.crawler(g+21,g+30,0);
+    h.plate(x-9,x-7.6,0,'C',0x40a8ff);h.bridge(x,x+9,'C',0x40a8ff);x+=9;
+    g=x;x=h.flat(x,40);h.cp(g+2,0);h.gate(g+8,0,9,5,2.6,0);h.crawler(g+12,g+20,0);h.bricks(g+26,0,2,4);
+    g=x;x=h.flat(x,40);h.cp(g+2,0);h.plate(g+8,g+9.4,0,'D',0xffd23f);h.door(g+15,0,9,'D',0xffd23f);h.goal(g+22);
+  }},
+  {name:'Boost Circuit',theme:THEMES[42],build:function(h){
+    h.hint(0,'Level 43: Boost Circuit. Yellow chevrons are boost pads: sprint off one and jump to clear a wide gap.');
+    let x=h.flat(-14,26);h.crawler(8,11,0);x=h.boostFlat(x,4);x+=8.5;
+    let g=x;x=h.flat(x,30);h.cp(g+2,0);h.crawler(g+6,g+14,0);h.spikes(g+18,g+20,0);x=h.boostFlat(x,4);x+=8.5;
+    g=x;x=h.flat(x,32);h.cp(g+2,0);h.bricks(g+8,0,2,4);h.crawler(g+13,g+22,0);x=h.boostFlat(x,4);x+=8.5;
+    g=x;x=h.flat(x,36);h.cp(g+2,0);h.block(g+9,0,g+11,5.5);h.spikes(g+16,g+19,0);h.crawler(g+22,g+30,0);x=h.boostFlat(x,4);x+=8.5;
+    g=x;x=h.flat(x,52);h.cp(g+2,0);h.bricks(g+8,0,2,4);h.crawler(g+13,g+20,0);
+    h.plate(g+28,g+29.4,0,'A',0xff4fd8);h.door(g+35,0,9,'A',0xff4fd8);h.goal(g+42);
+  }},
+  {name:'Gale Tower',theme:THEMES[43],build:function(h){
+    h.hint(0,'Level 44: Gale Tower. Climb into the wind. Tailwinds help your jumps, headwinds fight them.');
+    let x=h.flat(-14,24);
+    let u=h.up(x,6,2);let rx=u.x+1.6;
+    h.ledge(rx,16,12);h.cp(rx+2,12);h.wind(rx+4,rx+14,12,20,-3,4,2,0);h.crawler(rx+5,rx+10,12);
+    let e=rx+16;h.spring(e,e+2,12);h.ledge(e+4,14,18);h.cp(e+6,18);h.wind(e+6,e+16,18,26,3.5);
+    let e2=e+18;h.wind(e2-8,e2+10,14,26,6);
+    h.ledge(e2+9,14,18);h.cp(e2+11,18);h.crawler(e2+14,e2+20,18);
+    u=h.up(e2+23,5,20);rx=u.x+1.6;
+    h.ledge(rx,22,28);h.cp(rx+2,28);h.wind(rx+4,rx+14,28,36,-3,4,2,1);h.spikes(rx+10,rx+12,28);h.goal(rx+15,28);
+  }},
+  {name:'Bridge Builders',theme:THEMES[44],build:function(h){
+    h.hint(0,'Level 45: Bridge Builders. Plates lower the bridges, at the ground and in the sky. Keep the crates coming.');
+    let x=h.flat(-14,34);h.crawler(8,14,0);
+    h.plate(15,16.4,0,'A',0xff4fd8);h.bridge(x,x+9,'A',0xff4fd8);x+=9;
+    let g=x;x=h.flat(x,20);h.cp(g+2,0);h.crawler(g+6,g+14,0);
+    let u=h.up(x,3,2);let rx=u.x+1.6;
+    h.ledge(rx,22,6);h.cp(rx+2,6);h.plate(rx+4,rx+5.4,6,'B',0x9bff3c);
+    h.bridge(rx+22,rx+31,'B',0x9bff3c,6);rx+=31;
+    h.ledge(rx,16,6);h.cp(rx+2,6);h.bricks(rx+8,6,1,3);h.crawler(rx+11,rx+15,6);
+    const d=h.down(rx+16,2,4);x=d.x+2.4;
+    g=x;x=h.flat(x,26);h.cp(g+2,0);h.plate(g+6,g+7.4,0,'C',0x40a8ff);h.spikes(g+12,g+14,0);
+    h.bridge(x,x+9,'C',0x40a8ff);x+=9;
+    g=x;x=h.flat(x,48);h.cp(g+2,0);h.block(g+9,0,g+11,5.5);h.crawler(g+14,g+22,0);
+    h.plate(g+28,g+29.4,0,'D',0xffd23f);h.door(g+35,0,9,'D',0xffd23f);h.goal(g+41);
+  }},
+  {name:'Hurricane',theme:THEMES[45],gravity:.75,build:function(h){
+    h.hint(0,'Level 46: Hurricane. Floaty gravity and savage gusts. Let the wind carry you over the wide gaps.');
+    let x=h.flat(-14,30);h.crawler(8,14,0);
+    h.wind(10,30,-8,14,6);x+=11;
+    let g=x;x=h.flat(x,30);h.cp(g+2,0);h.wind(g+4,g+26,-1,8,-3);h.crawler(g+8,g+16,0);h.spikes(g+20,g+22,0);
+    h.wind(x-4,x+12,-8,14,6,6,3,0);x+=11;
+    g=x;x=h.flat(x,34);h.cp(g+2,0);h.bricks(g+9,0,2,5);h.wind(g+14,g+30,-1,8,-3.5,4,2,1);h.crawler(g+17,g+26,0);
+    h.wind(x-4,x+14,-8,14,6);x+=13;
+    g=x;x=h.flat(x,60);h.cp(g+2,0);h.block(g+9,0,g+11,7);h.wind(g+14,g+36,-1,8,-3);h.spikes(g+22,g+25,0);h.crawler(g+28,g+36,0);
+    h.plate(g+42,g+43.4,0,'A',0xff4fd8);h.door(g+49,0,9,'A',0xff4fd8);h.goal(g+54);
+  }},
+  {name:'Boost and Boom',theme:THEMES[46],build:function(h){
+    h.hint(0,'Level 47: Boost and Boom. Boost pads, crushers and gates, all in a row. Do not stop on the pads!');
+    let x=h.flat(-14,26);h.crawler(8,11,0);x=h.boostFlat(x,4);x+=8.5;
+    let g=x;x=h.flat(x,34);h.cp(g+2,0);h.crusher(g+8,g+11,4.2,0,1.4);h.crusher(g+14,g+17,4.2,2,1.4);h.gate(g+21,0,9,4.6,2.4,0);h.crawler(g+24,g+31,0);x=h.boostFlat(x,4);x+=8.5;
+    g=x;x=h.flat(x,40);h.cp(g+2,0);h.pspikes(g+8,g+12,0,3,1.5,0);h.bricks(g+17,0,2,4);h.gate(g+24,0,9,4.6,2.4,1);h.crusher(g+30,g+33,4.2,0,1.4);x=h.boostFlat(x,4);x+=8.5;
+    g=x;x=h.flat(x,70);h.cp(g+2,0);h.block(g+9,0,g+11,5.5);h.crusher(g+18,g+21,4.2,1,1.4);h.crawler(g+24,g+32,0);h.gate(g+36,0,9,5,2.6,0);h.spikes(g+42,g+45,0);
+    h.plate(g+52,g+53.4,0,'A',0xff4fd8);h.door(g+59,0,9,'A',0xff4fd8);h.goal(g+64);
+  }},
+  {name:'Castle Siege',theme:THEMES[47],build:function(h){
+    h.hint(0,'Level 48: Castle Siege. Drawbridges, gates and crushers guard the keep. Break in!');
+    let x=h.flat(-14,36);h.crawler(8,14,0);
+    h.plate(15,16.4,0,'A',0xff4fd8);h.bridge(x,x+8,'A',0xff4fd8);x+=8;
+    let g=x;x=h.flat(x,34);h.cp(g+2,0);h.gate(g+8,0,9,5,2.6,0);h.crusher(g+14,g+17,4.2,0,1.4);h.bricks(g+22,0,2,4);h.crawler(g+27,g+32,0);
+    h.plate(x-9,x-7.6,0,'B',0x9bff3c);h.bridge(x,x+9,'B',0x9bff3c);x+=9;
+    g=x;x=h.flat(x,44);h.cp(g+2,0);h.block(g+9,0,g+11,5.5);h.gate(g+16,0,9,4.6,2.4,1);h.pspikes(g+22,g+26,0,3,1.5,0);h.crusher(g+30,g+33,4.2,2,1.4);h.crawler(g+36,g+42,0);
+    h.plate(x-9,x-7.6,0,'C',0x40a8ff);h.bridge(x,x+10,'C',0x40a8ff);x+=10;
+    g=x;x=h.flat(x,56);h.cp(g+2,0);h.bricks(g+8,0,2,4);h.gate(g+16,0,9,5,2.6,0);h.crawler(g+20,g+28,0);h.crusher(g+32,g+35,4.2,0,1.4);
+    h.plate(g+42,g+43.4,0,'D',0xffd23f);h.door(g+49,0,9,'D',0xffd23f);h.goal(g+53);
+  }},
+  {name:'Sky Highway',theme:THEMES[48],build:function(h){
+    h.hint(0,'Level 49: Sky Highway. High ledges and wide gaps. Boost off the yellow pad, and ride the tailwind.');
+    let x=h.flat(-14,24);
+    let u=h.up(x,6,2);let rx=u.x+1.6;
+    h.ledge(rx,12,12);h.cp(rx+2,12);h.crawler(rx+4,rx+10,12);
+    rx+=12;rx=h.boostAt(rx,4,12);rx+=8.5;
+    h.ledge(rx,22,12);h.cp(rx+2,12);h.wind(rx+6,rx+20,12,20,-2.5,4,2,0);h.crawler(rx+8,rx+14,12);
+    rx+=22;h.hint(rx-6,'Another wide gap, with a tailwind. Jump at the edge!');
+    h.wind(rx-6,rx+10,8,20,6);rx+=9;
+    h.ledge(rx,20,12);h.cp(rx+2,12);h.spikes(rx+8,rx+10,12);
+    rx+=20;u=h.up(rx,5,14);rx=u.x+1.6;
+    h.ledge(rx,22,22);h.cp(rx+2,22);h.bricks(rx+8,22,1,3);h.goal(rx+15,22);
+  }},
+  {name:'Storm Ascent',theme:THEMES[50],rise:{start:-6,speed:.5},build:function(h){
+    h.hint(0,'Level 50: Storm Ascent. Rising lava and wild wind. Climb fast, the gusts will help and hurt.');
+    let x=h.flat(-14,22);
+    let u=h.up(x,6,2);let rx=u.x+1.6;
+    h.ledge(rx,14,12);h.cp(rx+2,12);h.wind(rx+3,rx+13,12,20,-3);
+    let c=h.crumbUp(rx+14,5,14);rx=c.x+2;
+    h.ledge(rx,12,22);h.cp(rx+2,22);h.wind(rx+2,rx+10,22,30,3.5);
+    let e=rx+12;h.spring(e,e+2,22);h.ledge(e+4,14,28);h.cp(e+6,28);
+    rx=e+18;h.hint(rx-4,'A gap in the storm. Bridge it, or ride the tailwind!');h.wind(rx-6,rx+10,24,36,6);rx+=9;
+    h.ledge(rx,14,28);h.cp(rx+2,28);h.crawler(rx+5,rx+12,28);
+    u=h.up(rx+14,4,30);rx=u.x+1.6;
+    h.ledge(rx,22,36);h.cp(rx+2,36);h.goal(rx+12,36);
+  }},
+  {name:'Grand Finale',theme:THEMES[49],gravity:.8,build:function(h){
+    const PI=Math.PI;
+    h.hint(0,'Level 51: Grand Finale. Wind, drawbridges, boost pads, gates, crumbling slabs and more. Reach the very top!');
+    let x=h.flat(-14,24);h.crawler(8,13,0);x=h.boostFlat(x,4);h.wind(x-6,x+10,-6,10,5);x+=8.5;
+    let g=x;x=h.flat(x,28);h.cp(g+2,0);h.gate(g+8,0,9,5,2.6,0);h.crawler(g+12,g+20,0);h.spikes(g+22,g+24,0);
+    h.plate(x-10,x-8.6,0,'A',0xff4fd8);h.bridge(x,x+9,'A',0xff4fd8);x+=9;
+    g=x;x=h.flat(x,36);h.cp(g+2,0);h.bricks(g+8,0,2,5);h.portal(g+4,0,g+14,0);h.pspikes(g+19,g+23,0,3,1.5,0);h.crusher(g+27,g+30,4.2,0,1.4);
+    x=h.crumbs(x,5,3,2,0);x+=2;
+    g=x;x=h.flat(x,30);h.cp(g+2,0);h.block(g+9,0,g+11,7);h.crawler(g+14,g+22,0);
+    h.lift(x+1.5,4,4,3,-PI/2,.55);
+    let a=x+3;h.ledge(a,16,8);h.cp(a+2,8);h.wind(a+3,a+14,8,16,-3,4,2,0);
+    let e=a+16;h.spring(e,e+2,8);
+    let b=e+4;h.ledge(b,16,14);h.cp(b+2,14);
+    let s=h.stairs(b+16,4,16,2,2,3);
+    let rx=s.x+2;h.ledge(rx,18,22);h.cp(rx+2,22);h.bricks(rx+6,22,1,3);h.crawler(rx+9,rx+16,22);
+    rx+=18;h.hint(rx-3,'The final gap. Bridge it and take the throne!');rx+=9;
+    h.wind(rx-8,rx+10,18,30,5);
     h.ledge(rx,22,22);h.goal(rx+12,22);
   }}
 ];
@@ -1001,7 +1372,7 @@ let curLevel=0;
 try{const sv=parseInt(localStorage.getItem('bb-level'),10);if(sv>=0&&sv<LEVELS.length)curLevel=sv;}catch(e){}
 
 function buildLevel(){
-  const L={rects:[],bricks:[],boxes:[],enemies:[],movers:[],plates:[],doors:[],cps:[],hints:[],hazards:[],belts:[],crumbles:[],portals:[],goal:null,group:new THREE.Group(),t:0};
+  const L={rects:[],bricks:[],boxes:[],enemies:[],movers:[],plates:[],doors:[],cps:[],hints:[],hazards:[],belts:[],crumbles:[],portals:[],gates:[],winds:[],bridges:[],goal:null,group:new THREE.Group(),t:0};
   scene.add(L.group);
   const G=L.group;
   const crystalMats=LEVELS[curLevel].theme.crys.map(function(c){return new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.7,roughness:.3,flatShading:true});});
@@ -1009,10 +1380,10 @@ function buildLevel(){
   function rock(x0,y0,x1,y1,kind,ice){
     const w=x1-x0,h=y1-y0,d=kind==='ground'?11:kind==='plat'?3.6:4.2;
     const geo=new THREE.BoxGeometry(w,h,d);scaleUV(geo,w,h,d,2);
-    const mesh=new THREE.Mesh(geo,ice?[M.iceSide,M.iceSide,M.iceTop,M.iceSide,M.iceSide,M.iceSide]:[M.side,M.side,M.top,M.side,M.side,M.side]);
+    const mesh=new THREE.Mesh(geo,ice==='boost'?[M.side,M.side,M.boostTop,M.side,M.side,M.side]:ice==='mud'?[M.mudSide,M.mudSide,M.mudTop,M.mudSide,M.mudSide,M.mudSide]:ice?[M.iceSide,M.iceSide,M.iceTop,M.iceSide,M.iceSide,M.iceSide]:[M.side,M.side,M.top,M.side,M.side,M.side]);
     mesh.position.set((x0+x1)/2,(y0+y1)/2,kind==='ground'?-3:0);
     mesh.castShadow=true;mesh.receiveShadow=true;G.add(mesh);
-    const r={x0:x0,y0:y0,x1:x1,y1:y1,type:kind==='plat'?'plat':'ground',solid:true,mesh:mesh,ice:!!ice};
+    const r={x0:x0,y0:y0,x1:x1,y1:y1,type:kind==='plat'?'plat':'ground',solid:true,mesh:mesh,ice:ice===true,mud:ice==='mud',boost:ice==='boost'?1:0};
     L.rects.push(r);return r;
   }
   function deco(x0,x1,y){
@@ -1084,6 +1455,25 @@ function buildLevel(){
     mesh.castShadow=true;mesh.receiveShadow=true;mesh.position.set(mid,top-.3,0);G.add(mesh);
     const r={x0:mid-w/2,x1:mid+w/2,y0:top-.6,y1:top,type:'mover',solid:true,mover:true,dx:0,dy:0};
     L.rects.push(r);L.movers.push({r:r,mid:mid,amp:amp,w:w,ph:ph,sp:sp,mesh:mesh});
+  }
+  function wind(x0,x1,y0,y1,sp,period,on,ph){
+    const m=new THREE.Mesh(boxGeo,new THREE.MeshBasicMaterial({color:0xcfe8ff,transparent:true,opacity:.06,depthWrite:false}));
+    m.scale.set(x1-x0,y1-y0,3);m.position.set((x0+x1)/2,(y0+y1)/2,0);m.renderOrder=-1;G.add(m);
+    L.winds.push({x0:x0,x1:x1,y0:y0,y1:y1,sp:sp,period:period,on:on,ph:ph||0,mesh:m});
+  }
+  function bridge(x0,x1,id,col,top){
+    top=top||0;const w=x1-x0;
+    const m=new THREE.Mesh(boxGeo,new THREE.MeshStandardMaterial({color:0x8a6a48,emissive:col,emissiveIntensity:.35,roughness:.8}));
+    m.scale.set(w,1,3);m.position.set((x0+x1)/2,top-.5,0);m.castShadow=true;m.receiveShadow=true;m.visible=false;G.add(m);
+    const r={x0:x0,x1:x1,y0:top-1,y1:top,type:'bridge',solid:false};
+    L.rects.push(r);L.bridges.push({x:x0,ex:x1+1.5,id:id,rect:r,mesh:m,amt:0,hold:0,top:top});
+  }
+  function gate(x,y,H,period,openT,ph){
+    const m=new THREE.Mesh(boxGeo,new THREE.MeshStandardMaterial({color:0xff9a3a,emissive:0xff5a10,emissiveIntensity:.5,roughness:.4,metalness:.5,transparent:true,opacity:.93}));
+    m.scale.set(.55,H,1.5);m.position.set(x+.5,y+H/2,0);m.castShadow=true;G.add(m);
+    [0,1].forEach(function(k){const post=new THREE.Mesh(boxGeo,M.mover);post.scale.set(.25,H+.4,1.7);post.position.set(x+(k?1.05:-.05),y+(H+.4)/2,0);G.add(post);});
+    const r={x0:x,y0:y,x1:x+1,y1:y+H,type:'gate',solid:true};
+    L.rects.push(r);L.gates.push({r:r,mesh:m,x:x,y:y,H:H,period:period,openT:openT,ph:ph,amt:0});
   }
   function crumble(x0,x1,top){
     const geo=new THREE.BoxGeometry(x1-x0,.6,3.2);scaleUV(geo,x1-x0,.6,3.2,2);
@@ -1177,6 +1567,10 @@ function buildLevel(){
     crumbUp:function(x,n,t0){for(let i=0;i<n;i++)crumble(x+2+i*5,x+5+i*5,t0+2*i);return {x:x+2+(n-1)*5+3,top:t0+2*(n-1)};},
     crumbDown:function(x,n,t0){for(let i=0;i<n;i++)crumble(x+2+i*5,x+5+i*5,t0-2*i);return {x:x+2+(n-1)*5+3,top:t0-2*(n-1)};},
     flatAt:function(x,len,top){rock(x,top-7,x+len,top,'ground');deco(x,x+len,top);return x+len;},
+    mudFlat:function(x,len){rock(x,-7,x+len,0,'ground','mud');deco(x,x+len,0);return x+len;},
+    gate:gate,wind:wind,bridge:bridge,
+    boostFlat:function(x,len){rock(x,-7,x+len,0,'ground','boost');return x+len;},
+    boostAt:function(x,len,top){rock(x,top-3,x+len,top,'block','boost');return x+len;},
     iceFlat:function(x,len){rock(x,-7,x+len,0,'ground',true);deco(x,x+len,0);return x+len;},
     beltFlat:function(x,len,sp){belt(x,x+len,sp,0);return x+len;},
     ledge:function(x,len,top){rock(x,top-3,x+len,top,'block');deco(x,x+len,top);},
@@ -1317,8 +1711,10 @@ const camS={x:4,y:3};
 let checkpoint={x:3,y:0};
 function applyTheme(i){
   const t=THEMES[i],tx=THEME_TEX[i];
-  scene.fog.near=t.fogNear||45;scene.fog.far=t.fogFar||170;hemi.intensity=t.hemi||.95;sun.intensity=t.sun||.95;
-  lavaMat.map=tx.lava;sky.material.map=tx.sky;
+  scene.fog.near=t.fogNear||45;scene.fog.far=t.fogFar||170;hemi.intensity=(t.hemi||.95)*.8;sun.intensity=t.sun||.95;
+  lavaMat.uniforms.tMap.value=tx.lava;sky.material.map=tx.sky;
+  scene.environment=envFor(i);
+  shafts.forEach(function(m){m.material.color.setHex(t.glow);});
   scene.fog.color.setHex(t.fog);M.side.color.setHex(t.side);M.top.color.setHex(t.top);
   lavaGlow.color.setHex(t.glow);embers.material.color.setHex(t.ember);
 }
@@ -1329,6 +1725,7 @@ function resetWorld(){
   grenades.length=0;
   W=buildLevel();
   W.lavaY=LEVELS[curLevel].lavaY!==undefined?LEVELS[curLevel].lavaY:-.3;lavaSea.position.y=W.lavaY;
+  W.rise=LEVELS[curLevel].rise||null;if(W.rise){W.lavaY=W.rise.start;lavaSea.position.y=W.lavaY;}
   GM=LEVELS[curLevel].gravity||1;GRAV=34*GM;SPRING_V=22*Math.sqrt(GM);
   checkpoint={x:3,y:0};gameT=0;deaths=0;lastLead=0;
   players.forEach(function(p,i){
@@ -1484,7 +1881,11 @@ function die(p,why){
 }
 function respawn(p){
   const o=players[1-p.idx];
-  const pos=(o.alive&&o.safe)?o.safe:checkpoint;
+  let pos=(o.alive&&o.safe)?o.safe:checkpoint;
+  if(W.rise){
+    if(o.alive){pos={x:o.x,y:o.y+.3};}
+    else{W.lavaY=W.rise.start;lavaSea.position.y=W.lavaY;pos=checkpoint;}
+  }
   p.x=pos.x;p.y=pos.y;p.vx=p.vy=0;p.alive=true;p.invuln=1.2;p.grounded=false;p.ground=null;p.root.visible=true;p.safe={x:pos.x,y:pos.y};
   emit(p.x,p.y+.5,0,14,{colors:[0xffffff,0x9be8ff],speed:6,size:.18,life:.6,g:0});
 }
@@ -1494,8 +1895,9 @@ function updatePlayer(p,dt,hw){
   p.invuln=Math.max(0,p.invuln-dt);
   if(p.ground&&p.ground.mover){p.x+=p.ground.dx;p.y+=p.ground.dy||0;}
   if(p.ground&&p.ground.belt)p.x+=p.ground.belt*dt;
+  for(const w of W.winds)if(windOn(w,W.t)&&ov(p.x-.3,p.y,p.x+.3,p.y+PH,w))moveX(p,w.sp*dt);
   // horizontal
-  const target=i.x*MOVE;
+  let target=i.x*MOVE;if(p.grounded&&p.ground&&p.ground.mud)target*=.5;
   let a=p.grounded?80:46;
   if(Math.abs(p.vx)>MOVE*1.05&&Math.sign(p.vx)===Math.sign(target||p.vx))a=p.grounded?30:7;
   else if(Math.abs(p.vx)>MOVE*1.05&&!target)a=p.grounded?30:5;
@@ -1520,6 +1922,8 @@ function updatePlayer(p,dt,hw){
     p.vy=SPRING_V;p.grounded=false;p.ground=null;p.jumping=false;p.coyote=0;SFX.spring();
     emit(p.x,p.y+.1,0,10,{colors:[0xff7ac8,0xffffff,0xfff07a],speed:5,size:.14,life:.5,g:6});
   }
+  if(p.grounded&&p.ground&&p.ground.boost&&p.vx<BOOST_V-.5){p.vx=BOOST_V;if(!(p.boostCd>0)){SFX.boost();p.boostCd=.5;emit(p.x,p.y+.1,0,8,{colors:[0xffd060,0xffffff],speed:5,size:.14,life:.4,g:2});}}
+  p.boostCd=Math.max(0,(p.boostCd||0)-dt);
   if(p.grounded&&p.ground&&p.ground.type==='crumble'&&p.ground.state===0){p.ground.state=1;p.ground.t=.6;SFX.crumble();}
   if(p.grounded&&wasAir&&fall<-9){p.squash=.28;SFX.land();emit(p.x,p.y+.05,0,6,{colors:DUST,speed:3,size:.14,life:.4,g:3});}
   if(p.grounded&&p.ground&&(p.ground.type==='ground'||p.ground.type==='plat')&&p.x>p.ground.x0+.7&&p.x<p.ground.x1-.7)p.safe={x:p.x,y:p.y};
@@ -1571,6 +1975,52 @@ function updateEnemies(dt){
     e.mesh.position.x=e.x;e.mesh.rotation.y=e.dir>0?0:Math.PI;
   }
 }
+function accelFor(vx,target,grounded,ground){
+  let a=grounded?80:46;
+  if(Math.abs(vx)>MOVE*1.05&&Math.sign(vx)===Math.sign(target||vx))a=grounded?30:7;
+  else if(Math.abs(vx)>MOVE*1.05&&!target)a=grounded?30:5;
+  if(grounded&&ground&&ground.ice)a=target!==0?14:2.2;
+  return a;
+}
+function windOn(w,t){return w.period===undefined||((((t+w.ph)%w.period)+w.period)%w.period)<w.on;}
+function updateBridges(dt){
+  for(const b of W.bridges){
+    const pl=W.plates.find(q=>q.id===b.id);
+    if(pl&&pl.pressed)b.hold=1.0;else b.hold=Math.max(0,b.hold-dt);
+    b.amt=approach(b.amt,b.hold>0?1:0,dt*3);
+    b.rect.solid=b.amt>.6;
+    b.mesh.visible=b.amt>.03;b.mesh.scale.y=Math.max(.05,b.amt);b.mesh.position.y=b.top-1+Math.max(.05,b.amt)/2;
+  }
+}
+function updateWindFx(dt){
+  for(const w of W.winds){
+    const on=windOn(w,W.t);
+    w.mesh.material.opacity=on?.07:.015;
+    if(on&&w.x1>camS.x-30&&w.x0<camS.x+30&&Math.random()<.6){
+      const x=w.x0+Math.random()*(w.x1-w.x0),y=w.y0+Math.random()*(w.y1-w.y0);
+      emit(x,y,rnd(-1,1),1,{colors:[0xffffff,0xcfe8ff],speed:.2,size:.09,life:.7,g:0});
+      const pt=PART[pIdx];pt.vx=w.sp*1.4;pt.vy*=.1;
+    }
+  }
+}
+function crumbSolidAt(c,t){
+  if(c.state===0)return true;
+  if(c.state===1)return t<c.t||t>=c.t+2.8;
+  return t>=c.t;
+}
+function gateClosed(g,t){return (((t+g.ph)%g.period)+g.period)%g.period>=g.openT;}
+function updateGates(dt){
+  for(const g of W.gates){
+    let open=!gateClosed(g,W.t);
+    if(!open&&players.some(p=>p.alive&&ov(p.x-PW/2,p.y,p.x+PW/2,p.y+PH,{x0:g.x+.05,x1:g.x+.95,y0:g.y,y1:g.y+g.H})))open=true;
+    g.amt=approach(g.amt,open?1:0,dt*4);
+    const hh=g.H*(1-g.amt);
+    g.r.y1=g.y+hh;g.r.solid=hh>.4;
+    g.mesh.scale.y=Math.max(.02,hh);g.mesh.position.y=g.y+Math.max(.02,hh)/2;
+    const u=(((W.t+g.ph)%g.period)+g.period)%g.period;
+    g.mesh.material.emissiveIntensity=(u>g.openT-.7&&u<g.openT)?.5+.6*Math.abs(Math.sin(W.t*18)):.5;
+  }
+}
 function updateCrumbles(dt){
   for(const c of W.crumbles){
     if(c.state===1){
@@ -1613,7 +2063,7 @@ function updateDoors(dt){
   for(const d of W.doors){
     const pl=W.plates.find(q=>q.id===d.id);
     let tgt=pl&&pl.pressed?1:0;
-    if(tgt===0){for(const p of players)if(p.alive&&ov(p.x-PW/2,p.y,p.x+PW/2,p.y+PH,{x0:d.x-.2,x1:d.x+1.2,y0:d.y,y1:d.y+d.H}))tgt=1;}
+    if(tgt===0){for(const p of players)if(p.alive&&ov(p.x-PW/2,p.y,p.x+PW/2,p.y+PH,{x0:d.x+.05,x1:d.x+.95,y0:d.y,y1:d.y+d.H}))tgt=1;}
     d.open=approach(d.open,tgt,dt*1.5);
     const h=Math.max(.02,d.H*(1-d.open));
     d.rect.y1=d.y+d.H*(1-d.open);d.rect.solid=d.H*(1-d.open)>.4;
@@ -1640,7 +2090,8 @@ function step(dt,hw){
   updateEnemies(dt);
   updateGrenades(dt);
   updateDoors(dt);
-  updateCrumbles(dt);updatePortals(dt);
+  updateCrumbles(dt);updatePortals(dt);updateGates(dt);updateBridges(dt);
+  if(W.rise){W.lavaY+=W.rise.speed*dt;lavaSea.position.y=W.lavaY;}
   checkProgress();
 }
 
@@ -1651,9 +2102,10 @@ function mkBot(){return {t:0,cd:0,stuck:0,lx:0,hold:0,placed:false,restoreAim:fa
 function simPath(p,dir,jump,plan){
   const saved=W.movers.map(m=>[m.r.x0,m.r.x1,m.r.dx,m.r.y0,m.r.y1,m.r.dy]);
   const csol=W.crumbles.map(c=>c.solid);W.crumbles.forEach(c=>{c.solid=true;});
+  const gsol=W.gates.map(g=>[g.r.solid,g.r.y1]);
   const out=(function(){
     const s={x:p.x,y:p.y,vx:p.vx,vy:p.vy,grounded:p.grounded,ground:p.ground};
-    let air=!p.grounded,cut=false;
+    let air=!p.grounded,cut=false,landN=-1;
     if(jump){s.vy=JUMP_V;s.grounded=false;air=true;}
     const dt=1/60;
     for(let n=0;n<240;n++){
@@ -1663,26 +2115,30 @@ function simPath(p,dir,jump,plan){
         if(m.axis==='y'){const ny=m.mid+m.amp*Math.sin(ph);m.r.dy=ny-m.r.y1;m.r.dx=0;m.r.y0=ny-.6;m.r.y1=ny;}
         else{const nx=m.mid+m.amp*Math.sin(ph);m.r.dx=nx-(m.r.x0+m.w/2);m.r.dy=0;m.r.x0=nx-m.w/2;m.r.x1=nx+m.w/2;}
       }
+      for(const g of W.gates){const cl=gateClosed(g,W.t+(n+1)*dt);g.r.solid=cl;g.r.y1=g.y+g.H;}
       if(s.ground&&s.ground.mover&&s.grounded){s.x+=s.ground.dx;s.y+=s.ground.dy||0;}
       if(s.ground&&s.ground.belt&&s.grounded)s.x+=s.ground.belt*dt;
+      for(const w of W.winds)if(windOn(w,W.t+(n+1)*dt)&&ov(s.x-.3,s.y,s.x+.3,s.y+PH,w))moveX(s,w.sp*dt);
       const dn=(jump&&plan)?(t<plan.stopT?dir:plan.after*dir):dir;
       if(jump&&plan&&!cut&&t>=plan.hold&&s.vy>0){s.vy*=.5;cut=true;}
-      const acc=(s.grounded&&s.ground&&s.ground.ice)?(dn?14:2.2):(s.grounded?80:46);
-      s.vx=approach(s.vx,dn*MOVE,acc*dt);
+      const tg=dn*MOVE*((s.grounded&&s.ground&&s.ground.mud)?.5:1);
+      s.vx=approach(s.vx,tg,accelFor(s.vx,tg,s.grounded,s.ground)*dt);
       s.vy=Math.max(-28,s.vy-GRAV*dt);
       moveX(s,s.vx*dt);moveY(s,s.vy*dt);
       if(s.grounded&&s.ground&&s.ground.type==='spring'){s.vy=SPRING_V;s.grounded=false;s.ground=null;air=true;}
-      if(s.y<W.lavaY-.05)return null;
+      if(s.grounded&&s.ground&&s.ground.boost&&s.vx<BOOST_V-.5)s.vx=BOOST_V;
+      if(landN<0&&s.y<W.lavaY-.05)return null;
       for(const h of W.hazards)if(hazHit(h,W.t+(n+1)*dt,s.x,s.y))return null;
       if(!s.grounded)air=true;
       const prog=(s.x-p.x)*dir;
-      if(s.grounded&&air&&n>2)return prog>=.8?{x:s.x,y:s.y}:null;
+      if(s.grounded&&air&&n>2){if(landN<0)landN=n;if(n>=landN+14)return prog>=.8?{x:s.x,y:s.y}:null;}
       if(s.grounded&&!air&&prog>3)return {x:s.x,y:s.y};
     }
     return null;
   })();
   W.movers.forEach((m,i)=>{const v=saved[i];m.r.x0=v[0];m.r.x1=v[1];m.r.dx=v[2];m.r.y0=v[3];m.r.y1=v[4];m.r.dy=v[5];});
   W.crumbles.forEach((c,i)=>{c.solid=csol[i];});
+  W.gates.forEach((g,i)=>{g.r.solid=gsol[i][0];g.r.y1=gsol[i][1];});
   return out;
 }
 function hazRect(h,t){
@@ -1710,6 +2166,7 @@ function dynNear(p,dir){
 function simSafe(p,dir,secs){
   const saved=W.movers.map(m=>[m.r.x0,m.r.x1,m.r.dx,m.r.y0,m.r.y1,m.r.dy]);
   const csol=W.crumbles.map(c=>c.solid);W.crumbles.forEach(c=>{c.solid=true;});
+  const gsol=W.gates.map(g=>[g.r.solid,g.r.y1]);
   const ok=(function(){
     const s={x:p.x,y:p.y,vx:p.vx,vy:p.vy,grounded:p.grounded,ground:p.ground};
     const dt=1/60;
@@ -1719,13 +2176,16 @@ function simSafe(p,dir,secs){
         if(m.axis==='y'){const ny=m.mid+m.amp*Math.sin(ph);m.r.dy=ny-m.r.y1;m.r.dx=0;m.r.y0=ny-.6;m.r.y1=ny;}
         else{const nx=m.mid+m.amp*Math.sin(ph);m.r.dx=nx-(m.r.x0+m.w/2);m.r.dy=0;m.r.x0=nx-m.w/2;m.r.x1=nx+m.w/2;}
       }
+      for(const g of W.gates){const cl=gateClosed(g,W.t+(n+1)*dt);g.r.solid=cl;g.r.y1=g.y+g.H;}
       if(s.ground&&s.ground.mover&&s.grounded){s.x+=s.ground.dx;s.y+=s.ground.dy||0;}
       if(s.ground&&s.ground.belt&&s.grounded)s.x+=s.ground.belt*dt;
-      const acc=(s.grounded&&s.ground&&s.ground.ice)?(dir?14:2.2):(s.grounded?80:46);
-      s.vx=approach(s.vx,dir*MOVE,acc*dt);
+      for(const w of W.winds)if(windOn(w,W.t+(n+1)*dt)&&ov(s.x-.3,s.y,s.x+.3,s.y+PH,w))moveX(s,w.sp*dt);
+      const tg=dir*MOVE*((s.grounded&&s.ground&&s.ground.mud)?.5:1);
+      s.vx=approach(s.vx,tg,accelFor(s.vx,tg,s.grounded,s.ground)*dt);
       s.vy=Math.max(-28,s.vy-GRAV*dt);
       moveX(s,s.vx*dt);moveY(s,s.vy*dt);
       if(s.grounded&&s.ground&&s.ground.type==='spring'){s.vy=SPRING_V;s.grounded=false;s.ground=null;}
+      if(s.grounded&&s.ground&&s.ground.boost&&s.vx<BOOST_V-.5)s.vx=BOOST_V;
       if(s.y<W.lavaY-.05)return false;
       for(const h of W.hazards)if(hazHit(h,W.t+(n+1)*dt,s.x,s.y))return false;
     }
@@ -1733,7 +2193,11 @@ function simSafe(p,dir,secs){
   })();
   W.movers.forEach((m,i)=>{const v=saved[i];m.r.x0=v[0];m.r.x1=v[1];m.r.dx=v[2];m.r.y0=v[3];m.r.y1=v[4];m.r.dy=v[5];});
   W.crumbles.forEach((c,i)=>{c.solid=csol[i];});
+  W.gates.forEach((g,i)=>{g.r.solid=gsol[i][0];g.r.y1=gsol[i][1];});
   return ok;
+}
+function crumbPending(p,dir){
+  return W.crumbles.some(c=>c.state===2&&c!==p.ground&&(dir>0?c.x1>p.x&&c.x0-p.x<10:c.x0<p.x&&p.x-c.x1<10));
 }
 function liftAhead(p,dir){
   return W.movers.some(m=>{if(m.axis!=='y')return false;const d=dir>0?m.r.x0-p.x:p.x-m.r.x1;return d>-1.5&&d<3.5;});
@@ -1771,7 +2235,8 @@ function botRunUp(p,dir){
 }
 function botWarp(p,o){
   emit(p.x,p.y+.5,0,14,{colors:[0xffffff,0x9be8ff],speed:6,size:.18,life:.6,g:0});
-  p.x=o.safe.x;p.y=o.safe.y;p.vx=p.vy=0;p.invuln=1;p.grounded=false;p.ground=null;
+  const tp=(W.rise&&o.safe.y<W.lavaY+2)?{x:o.x,y:o.y+.3}:o.safe;
+  p.x=tp.x;p.y=tp.y;p.vx=p.vy=0;p.invuln=1;p.grounded=false;p.ground=null;
   emit(p.x,p.y+.5,0,14,{colors:[0xffffff,0x9be8ff],speed:6,size:.18,life:.6,g:0});
 }
 function botThink(p,dt){
@@ -1802,7 +2267,7 @@ function botThink(p,dt){
   // stuck as Box: clear the old crates and start over
   if(p.role==='box'&&b.stuck>5&&W.boxes.length&&!idleByChoice&&b.cd<=0){i.altPressed=true;b.cd=.3;i.x=0;return;}
   // pressure-plate doors
-  const dr=W.doors.find(d=>p.x<d.x&&d.x-p.x<18&&(!o.alive||o.x<d.x+1.5));
+  const dr=W.doors.concat(W.bridges).sort((a,b2)=>a.x-b2.x).find(d=>p.x<d.x&&d.x-p.x<18&&(!o.alive||o.x<(d.ex!==undefined?d.ex:d.x+1.5)));
   if(dr){
     const pl=W.plates.find(q=>q.id===dr.id);
     if(pl){
@@ -1837,11 +2302,12 @@ function botThink(p,dt){
       if(grounded){
         if(botJumpIf(p,dir)){}
         else if(onLift){b.stuck=0;dir=0;}
+        else if(wr.type==='gate'){b.stuck=0;}
         else if(p.role==='boom'){
           if(wr.type==='brick'){if(b.cd<=0&&p.cool<=0)botThrow(p,0);dir=0;}
           else if(wr.type==='door')dir=0;
           else if(b.cd<=0&&p.cool<=0)botThrow(p,3);
-        }else if(wr.type==='brick'&&b.stuck<3&&players[1-p.idx].role==='boom'&&players[1-p.idx].alive){dir=0;}
+        }else if(wr.type==='brick'&&b.stuck<3&&players[1-p.idx].role==='boom'&&players[1-p.idx].alive){/* keep pushing toward the wall */}
         else if(b.cd<=0){i.jumpHeld=true;i.jumpPressed=true;b.hold=.7;b.cd=.35;b.placed=false;}
       }else if(p.role==='box'&&!b.placed&&p.vy<3&&p.vy>-6){
         const tg=boxTarget(p,true);
@@ -1850,7 +2316,11 @@ function botThink(p,dt){
     }else if(!groundAhead(p,dir)){
       if(grounded&&!simPath(p,dir,false)){
         if(botJumpIf(p,dir)){}
-        else if(onLift||liftAhead(p,dir)){b.stuck=0;dir=0;}
+        else if(p.ground&&p.ground.type==='crumble'){
+          // this slab is about to drop: jump anyway and hope the next one is back
+          i.jumpHeld=true;i.jumpPressed=true;b.hold=9;b.plan={hold:9,stopT:9,after:1,dir:dir,t:0,air:false};
+        }
+        else if(onLift||liftAhead(p,dir)||crumbPending(p,dir)){b.stuck=0;dir=0;}
         else if(botRunUp(p,dir)){dir=0;}
         else if(p.role==='box'){
           dir=0;
@@ -2057,7 +2527,8 @@ function updateCamera(dt,time){
   sky.position.copy(camera.position);
   sun.position.set(camS.x+12,camS.y+26,22);sun.target.position.set(camS.x,camS.y-3,0);
   lavaGlow.position.set(camS.x,-1.2,5);
-  lavaMat.map.offset.x=(time*.012)%1;lavaMat.map.offset.y=(time*.02)%1;
+  lavaMat.uniforms.time.value=time;
+  shafts.forEach(function(m,i){m.position.y=camS.y+14;m.position.x=m.userData.bx+camS.x*.12+Math.sin(time*.15+i)*1.5;});
   return hw;
 }
 function updateEmbers(dt){
@@ -2077,6 +2548,9 @@ function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min(.05,(now-last)/1000);last=now;tAll+=dt;
   if(pressed.has('KeyM')){muted=!muted;banner(muted?'Sound off':'Sound on',900);}
+  if(pressed.has('KeyQ')){if(composer){userQuality=true;setQuality(quality==='high'?'low':'high');}else banner('Post effects unavailable',1200);}
+  perfAcc+=dt;perfN++;
+  if(perfN>=150){const avg=perfAcc/perfN;perfAcc=0;perfN=0;if(composer&&quality==='high'&&!userQuality&&tAll>4&&avg>.036)setQuality('low',true);}
   if(state==='menu')updateMenu(dt);
   else if(state==='play'){
     if(pressed.has('Escape')||pressed.has('KeyP')){state='paused';$('#pause').classList.add('on');}
@@ -2096,6 +2570,7 @@ function frame(now){
   }
   updateParticles(dt);updateFx(dt);
   if(W.hazards)updateHazards();
+  if(W.winds&&state!=='paused')updateWindFx(dt);
   if(W.belts)for(const bt of W.belts)bt.tex.offset.x-=Math.abs(bt.sp)*dt;
   if(W.portals)for(const pl of W.portals)pl.rings.forEach((r,i)=>{r.rotation.z+=dt*(i?-2.2:2.2);r.scale.setScalar(1+.06*Math.sin(tAll*5+i));});
   animatePlayers(dt,tAll);
@@ -2111,11 +2586,12 @@ function frame(now){
       $('#proglbl').textContent='LEVEL '+(curLevel+1)+'  \u00b7  '+fmt(gameT)+'  ·  '+Math.round(clamp(lastLead/W.goal.x*100,0,100))+'%';}
   }
   pressed.clear();released.clear();
-  renderer.render(scene,camera);
+  if(composer&&quality==='high'){finalPass.uniforms.time.value=tAll;composer.render(dt);}
+  else renderer.render(scene,camera);
 }
 
 /* debug hook for automated checks */
-window.__game={setLevel:function(n){curLevel=n;resetWorld();},mkBot:mkBot,camS:camS,players:players,get W(){return W;},get state(){return state;},keys:keys,pressed:pressed};
+window.__game={simJump:(p,d)=>simJump(p,d),simPath:(p,d,j,pl)=>simPath(p,d,j,pl),setLevel:function(n){curLevel=n;resetWorld();},mkBot:mkBot,camS:camS,players:players,get W(){return W;},get state(){return state;},keys:keys,pressed:pressed};
 
 window.__game.run=function(sec){
   const dt=1/60;

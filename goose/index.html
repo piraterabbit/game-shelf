@@ -545,8 +545,38 @@ button:focus-visible { outline: 4px solid #2f7cff; outline-offset: 3px; }
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
   }
+  var honkCurve = null, noiseBuf = null;
+  function honkVoice(delay, dur, f0, fPeak, fEnd, vol) {
+    var a = audio(); if (!a || muted) return;
+    var t = a.currentTime + delay, i;
+    if (!honkCurve) { honkCurve = new Float32Array(512); for (i = 0; i < 512; i++) { var x = i / 256 - 1; honkCurve[i] = Math.tanh(x * 6) * 0.8; } }
+    if (!noiseBuf || noiseBuf.sampleRate !== a.sampleRate) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); var d = noiseBuf.getChannelData(0); for (i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    // glottal source: bright sawtooth with a quick pitch rise and fall, plus jitter
+    var src = a.createOscillator(); src.type = 'sawtooth';
+    src.frequency.setValueAtTime(f0, t); src.frequency.linearRampToValueAtTime(fPeak, t + dur * 0.22); src.frequency.linearRampToValueAtTime(fEnd, t + dur);
+    var jit = a.createOscillator(), jg = a.createGain(); jit.frequency.value = 31; jg.gain.value = 9; jit.connect(jg); jg.connect(src.frequency);
+    // raspy amplitude flutter
+    var am = a.createGain(); am.gain.value = 0.62;
+    var fl = a.createOscillator(), fg = a.createGain(); fl.frequency.value = 78; fg.gain.value = 0.38; fl.connect(fg); fg.connect(am.gain);
+    src.connect(am);
+    var ws = a.createWaveShaper(); ws.curve = honkCurve; ws.oversample = '2x'; am.connect(ws);
+    var out = a.createGain(); out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(vol, t + 0.025); out.gain.setValueAtTime(vol, t + dur * 0.6); out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    // throat and bill resonances
+    [[720, 5, 1.0], [1350, 7, 0.75], [2450, 8, 0.5], [3500, 6, 0.22]].forEach(function (f) {
+      var bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f[0]; bp.Q.value = f[1];
+      var g = a.createGain(); g.gain.value = f[2]; ws.connect(bp); bp.connect(g); g.connect(out);
+    });
+    // breath noise
+    var ns = a.createBufferSource(); ns.buffer = noiseBuf; ns.loop = true;
+    var nb = a.createBiquadFilter(); nb.type = 'bandpass'; nb.frequency.value = 2000; nb.Q.value = 0.8;
+    var ng = a.createGain(); ng.gain.value = 0.22; ns.connect(nb); nb.connect(ng); ng.connect(out);
+    out.connect(a.destination);
+    var end = t + dur + 0.05;
+    [src, jit, fl, ns].forEach(function (n) { n.start(t); n.stop(end); });
+  }
   var sfx = {
-    honk: function () { tone('sawtooth', 430, 330, 0.3, 0.16); tone('square', 640, 500, 0.28, 0.05); tone('sawtooth', 470, 350, 0.28, 0.16, 0.2); tone('square', 700, 520, 0.26, 0.05, 0.2); },
+    honk: function () { honkVoice(0, 0.36, 400, 600, 460, 0.42); honkVoice(0.4, 0.3, 430, 570, 380, 0.4); },
     bonk: function (p) { tone('triangle', 260 + p * 40, 50, 0.2, 0.35); tone('square', 900, 200, 0.08, 0.07); },
     pick: function () { tone('sine', 660, 990, 0.12, 0.18); tone('sine', 990, 1320, 0.14, 0.18, 0.08); },
     end: function () { tone('triangle', 520, 260, 0.5, 0.25); }

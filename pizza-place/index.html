@@ -38,13 +38,23 @@ body{background:var(--sky);color:var(--txt);font-family:var(--font);font-size:14
 #stock div b{font-variant-numeric:tabular-nums}
 #stock .low{background:rgba(229,72,77,.4)} #stock .zero{background:var(--red)}
 #board h3.sub{margin-top:8px}
+.sh{display:grid;grid-template-columns:78px 1fr 34px;gap:6px;align-items:center;font-size:11px;font-weight:700;margin-top:3px}
+.sh .bar{height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden}
+.sh .bar i{display:block;height:100%}
+.sh em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+.sh.promo span{color:#ff9a9a}
 #players{width:230px;max-width:42vw;padding:8px 8px 6px;min-width:0}
-.pl{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;font-weight:600;font-size:12px;min-width:0}
+.pl{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px;padding:2px 6px;border-radius:6px;font-weight:600;font-size:12px;min-width:0}
 .pl.me{background:rgba(255,255,255,.1)}
-.pl .av{width:22px;height:22px;border-radius:4px;background:var(--c,#888);border:2px solid rgba(255,255,255,.7);box-sizing:border-box}
+.pl .av{width:18px;height:18px;border-radius:4px;background:var(--c,#888);border:2px solid rgba(255,255,255,.7);box-sizing:border-box}
 .pl .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl .nm small{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--c,var(--dim));text-transform:uppercase}
 .pl em{font-style:normal;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+#players .npc .nm small{display:inline;margin-left:6px;font-size:9px}
+#players .npc{padding:1px 6px;font-size:11px}
+#players .npc .av{width:14px;height:14px}
+#players h3{margin-bottom:4px}
+.jobbtn{padding:6px 11px}
 @media (max-width:640px){#players .npc{display:none}}
 #feed{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:70px;width:300px;max-width:50vw;display:flex;flex-direction:column;gap:3px;pointer-events:none}
 #feed div{background:rgba(24,26,29,.6);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;animation:fadein .2s ease-out}
@@ -104,6 +114,13 @@ body{background:var(--sky);color:var(--txt);font-family:var(--font);font-size:14
 .btn{align-self:flex-start;background:var(--green);color:#fff;font:800 18px var(--font);border:0;border-radius:8px;padding:11px 30px;cursor:pointer}
 .btn:hover{filter:brightness(1.08)} .btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .keys{font-size:12px;color:var(--dim)}
+.up{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px}
+.up b{display:block;font-size:15px}
+.up small{display:block;color:var(--dim);font-weight:500;line-height:1.35;margin-top:2px}
+.buy{font:800 14px var(--font);color:#fff;background:var(--green);border:0;border-radius:8px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.buy[disabled]{background:#3a3f47;color:var(--dim);cursor:default}
+.buy:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#shopList{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;padding-right:4px}
 .tops{display:flex;flex-wrap:wrap;gap:8px}
 .tbtn{font:700 14px var(--font);color:#fff;background:#3a3f47;border:2px solid transparent;border-radius:999px;padding:8px 16px;cursor:pointer;display:flex;align-items:center;gap:8px}
 .tbtn i{width:14px;height:14px;border-radius:50%;background:var(--c);border:2px solid rgba(255,255,255,.5);box-sizing:border-box}
@@ -119,7 +136,7 @@ body{background:var(--sky);color:var(--txt);font-family:var(--font);font-size:14
 
 <div id="hud">
   <div class="top">
-    <div id="board" class="panel"><h3>Orders</h3><div id="orders"></div><h3 class="sub">Kitchen stock</h3><div id="stock"></div></div>
+    <div id="board" class="panel"><h3>Orders</h3><div id="orders"></div><h3 class="sub">Kitchen stock</h3><div id="stock"></div><h3 class="sub">Market share</h3><div id="share"></div></div>
     <div id="players" class="panel"></div>
   </div>
   <div id="feed"></div>
@@ -134,6 +151,7 @@ body{background:var(--sky);color:var(--txt);font-family:var(--font);font-size:14
   </div>
 
   <div id="jobs">
+    <button class="jobbtn" id="shopBtn" type="button" style="--c:var(--gold)">Upgrades (U)</button>
     <button class="jobbtn" type="button" data-job="cashier" style="--c:var(--cashier)">Cashier</button>
     <button class="jobbtn" type="button" data-job="cook" style="--c:var(--cook)">Cook</button>
     <button class="jobbtn" type="button" data-job="boxer" style="--c:var(--boxer)">Box Boy</button>
@@ -159,8 +177,19 @@ body{background:var(--sky);color:var(--txt);font-family:var(--font);font-size:14
       <li style="--c:#8a8f99"><span><b>Customer</b> walks up to the counter, orders a pizza with the toppings you pick, and waits for the staff to cook it. You pay with your own earnings.</span></li>
       <li style="--c:var(--manager)"><span><b>Manager</b> mops spills, does paperwork at the desk, and can pay a team bonus that speeds up every coworker.</span></li>
     </ul>
+    <p>Earn cash, then press U to buy upgrades: a drive-thru window, more workers, a turbo oven, speed shoes and more.</p>
     <p class="keys">WASD or arrows to move and drive. E or Space to use. On a phone use the pad and the button.</p>
     <button class="btn" id="startBtn" type="button">Play</button>
+  </div>
+</div>
+
+<div class="screen" id="shop" hidden>
+  <div class="card" style="max-width:640px">
+    <div class="tag">Restaurant upgrades</div>
+    <h1 style="font-size:28px">Upgrades</h1>
+    <div class="price" id="shopCash">$0</div>
+    <div id="shopList"></div>
+    <div class="row2"><button class="btn ghost" id="shopClose" type="button">Close</button></div>
   </div>
 </div>
 
@@ -241,11 +270,12 @@ const JOBS={
   delivery:{name:'Delivery',hex:0xe5484d,css:'#e5484d',hat:{type:'cap',c:0xd6361f}},
   supplier:{name:'Supplier',hex:0xb8742a,css:'#b8742a',hat:{type:'hard',c:0xff7a1a}},
   manager:{name:'Manager',hex:0x7c4dff,css:'#7c4dff',hat:{type:'tophat',c:0x23252b},tie:true},
+  window:{name:'Drive-thru',hex:0x14b8a6,css:'#14b8a6',hat:{type:'cap',c:0x14b8a6}},
   customer:{name:'Customer',hex:0x8a8f99,css:'#8a8f99',hat:{type:'beanie',c:0x2f7bf0}}
 };
 const STN={dough:'Dough',sauce:'Sauce',cheese:'Cheese',pep:'Pepperoni',sausage:'Sausage',mushroom:'Mushroom',bacon:'Bacon',olive:'Olives',onion:'Onion',pineapple:'Pineapple'};
 const STOCK={dough:10,sauce:10,cheese:10,pep:8,sausage:8,mushroom:8,bacon:8,olive:8,onion:8,pineapple:8};
-const STMAX=16,CRATE=8;
+let STMAX=16;const CRATE=8;
 const lowest=()=>Object.keys(STOCK).sort((a,b)=>STOCK[a]/STMAX-STOCK[b]/STMAX)[0];
 const TOP=['pepperoni','sausage','mushroom','bacon','olive','onion','pineapple'];
 const cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -261,12 +291,13 @@ function randTop(){const r=Math.random(),n=r<.35?0:r<.8?1:2,pool=TOP.slice(),o=[
 
 let job=null;
 const state={held:null,oven:{pizza:null,t:0}};
+const OVENS=[state.oven];
 const orders=[];let oid=1;
-const G={playing:false,cash:30,eatT:0,eaten:0,served:0,del:0,late:0,spawn:1,dspawn:22,mspawn:18,paper:0,boost:0,suptick:0,mantick:0};
+const G={pcd:50,upg:{},books:0,party:0,pt:60,dtick:8,dsp:10,playing:false,cash:30,eatT:0,eaten:0,served:0,del:0,late:0,spawn:1,dspawn:22,mspawn:18,paper:0,boost:0,suptick:0,mantick:0};
 const messes=[];
 let pcust=null,menuOpen=false,menuSel=[],menuDrink=null;
 const allCust=()=>pcust?customers.concat([pcust]):customers;
-const BAKE=6,BURN=14;
+let BAKE=6,PREP=0.8;const BURN=14;
 
 /* ---------- world ---------- */
 const HOUSES=[];const PADS=[];
@@ -363,7 +394,7 @@ function buildWorld(){
   for(const [px,pz] of [[-9.6,7.8]]){cyl(0.5,0.35,0.7,6,0xc8691f,px,0.35,pz);ico(0.75,0x3e9b4f,px,1.3,pz);ico(0.5,0x52b862,px+0.3,1.8,pz);}
 
   // trees
-  for(const [x,z] of [[-16,2],[17,-2],[-22,-8],[23,6],[-14,10],[15,11],[-30,0],[32,-6],[-12,-18],[12,-20],[0,-24]]){
+  for(const [x,z] of [[-16,2],[17,-2],[-22,-8],[23,6],[-14,10],[15,11],[32,-6],[-12,-18],[12,-20],[0,-24]]){
     const k=0.9+((x*7+z*3)%5)/10;
     cyl(0.3*k,0.45*k,1.6*k,5,0x7a4a2b,x,0.8*k,z);
     cyl(0,2.3*k,3.0*k,5,0x2f8f4e,x,2.8*k,z);cyl(0,1.8*k,2.6*k,5,0x3e9b4f,x,4.2*k,z);cyl(0,1.2*k,2.2*k,5,0x4cb35e,x,5.5*k,z);
@@ -535,6 +566,7 @@ function buildStations(){
   ovenGlow=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.9,0.05),new THREE.MeshBasicMaterial({color:0x4a2a1a}));ovenGlow.position.set(0,1.3,0.95);og.add(ovenGlow);
   box(2.2,0.12,1.1,0x3a3a46,0,0.72,1.3,og);
   ovenG=new THREE.Group();ovenG.position.set(0,0.84,1.3);og.add(ovenG);
+  Object.assign(state.oven,{id:'oven',x:8.2,z:-4.2,face:-Math.PI/2,out:[[8.2,-5.6],[-8.3,-5.6],[-8.3,-3.6]],g:ovenG,glow:ovenGlow,bx:8.6,by:4.2,bz:-4.2,res:false});
   const ol=label('Oven');ol.position.set(8.6,4.6,-4.2);scene.add(ol);ST.push({id:'oven',x:8.2,z:-4.2});
   // box table on left wall
   const bg=new THREE.Group();bg.position.set(-10,0,-3.6);scene.add(bg);
@@ -586,7 +618,7 @@ function buildCar(c=car,col=0xe5484d){
 const car2={x:11,z:13.6,h:Math.PI/2,v:0,g:null};
 
 /* ---------- player and NPC coworkers ---------- */
-let player,pos={x:0,z:7.6},face=Math.PI,walkT=0,driving=false;
+let player,pos={x:0,y:0,z:7.6},face=Math.PI,walkT=0,driving=false;
 function outfit(j){
   const J=j?JOBS[j]:null;
   return {skin:0xf5cd30,shirt:J?J.hex:0x0d69ac,pants:j==='manager'?0x2a2d34:0x4b974b,hat:J?J.hat:{type:'beanie',c:0x0d69ac},apron:j==='cook',tie:j==='manager',hair:PHAIR,style:PSTYLE};
@@ -604,12 +636,17 @@ const NPC={
   boxer:{name:'BoxBoy_Lee',x:-8.5,z:-3.6,ry:-Math.PI/2,cash:0,cur:null,t:0},
   delivery:{name:'Driver_Kai',x:3.2,z:11.4,ry:0,cash:0,cur:null,t:0},
   supplier:{name:'Supplier_Sam',x:-6.2,z:11.4,ry:Math.PI/2,cash:0,cur:null,t:0},
-  manager:{name:'Manager_Dee',x:-8.4,z:4.2,ry:Math.PI/2,cash:0,cur:null,t:0}
+  manager:{name:'Manager_Dee',x:-8.4,z:4.2,ry:Math.PI/2,cash:0,cur:null,t:0},
+  cook2:{role:'cook',active:false,name:'PizzaChef_Zoe',x:3.6,z:-5.6,ry:Math.PI,cash:0,cur:null,t:0},
+  cashier2:{role:'cashier',active:false,name:'Cashier_Ava',x:0.8,z:0.3,ry:0,cash:0,cur:null,t:0},
+  boxer2:{role:'boxer',active:false,name:'BoxBoy_Sid',x:-8.4,z:-5.4,ry:-Math.PI/2,cash:0,cur:null,t:0},
+  window:{role:'window',active:false,name:'Window_Pat',x:-6,z:8.0,ry:0,cash:0,cur:null,t:0}
 };
+for(const k in NPC){const n=NPC[k];n.key=k;n.role=n.role||k;if(n.active===undefined)n.active=true;}
 function buildNPCs(){
   for(const k in NPC){
-    const n=NPC[k],J=JOBS[k];
-    n.ch=makeChar({skin:0xf5cd30,shirt:J.hex,pants:0x2d3a5a,hat:J.hat,apron:k==='cook',tie:!!J.tie,hair:pick(HAIR),style:pick(STYLES)});
+    const n=NPC[k],J=JOBS[n.role];
+    n.ch=makeChar({skin:0xf5cd30,shirt:J.hex,pants:0x2d3a5a,hat:J.hat,apron:n.role==='cook',tie:!!J.tie,hair:pick(HAIR),style:pick(STYLES)});
     n.ch.group.position.set(n.x,0,n.z);n.ch.group.rotation.y=n.ry;
     n.tag=label(n.name,.7,'#ffffff');n.tag.position.set(n.x,3.5,n.z);scene.add(n.tag);
     n.ph=Math.random()*6;n.steps=[];n.cool=0;n.hold=false;n.inCar=false;
@@ -617,7 +654,7 @@ function buildNPCs(){
   }
   syncNPCs();
 }
-function syncNPCs(){for(const k in NPC){const on=job!==k;NPC[k].ch.group.visible=on;NPC[k].tag.visible=on;}}
+function syncNPCs(){for(const k in NPC){const n=NPC[k],on=n.active&&job!==n.role;n.ch.group.visible=on;n.tag.visible=on;}}
 
 /* ---------- held pizza ---------- */
 function refreshHeld(){
@@ -626,14 +663,14 @@ function refreshHeld(){
   $('hands').textContent=!h?'Empty':h.cup?DR[h.drink].name:h.crate?STN[h.crate]+' crate':h.burnt?'Burnt pizza':h.boxed?'Boxed '+tname(h.toppings):h.baked?'Hot '+tname(h.toppings):h.cheese?'Raw '+tname(h.toppings):h.sauce?'Dough + sauce':'Dough';
 }
 function refreshOven(){
-  clear(ovenG);const o=state.oven;
-  if(o.pizza)ovenG.add(pizzaMesh(o.pizza,.85));
-  ovenGlow.material.color.setHex(o.pizza?(o.pizza.burnt?0x6a1b0c:0xff8a2a):0x4a2a1a);
+  for(const o of OVENS){clear(o.g);if(o.pizza)o.g.add(pizzaMesh(o.pizza,.85));o.glow.material.color.setHex(o.pizza?(o.pizza.burnt?0x6a1b0c:0xff8a2a):0x4a2a1a);}
 }
 
 /* ---------- customers ---------- */
 const SLOTS=[-4.5,0,4.5].map(x=>({x,c:null}));
 const customers=[];
+const DS=[0,1,2].map(i=>({i,x:-6-5.5*i,z:13.7,c:null}));
+const WINDOW_POS=[-6,8.0];
 const DOOR={x:0,z:12.5};
 function spawnCustomer(){
   const slot=SLOTS.find(s=>!s.c);if(!slot)return;
@@ -645,7 +682,26 @@ function spawnCustomer(){
   o.cust=c;slot.c=c;customers.push(c);orders.push(o);
 }
 function dismiss(c,angry){
+  if(angry)defect(c);
+  if(c.drive){c.state='out';c.slot.c=null;c.tx=-2;c.tz=16.4;c.path=[{x:12,z:18.8},{x:48,z:18.8}];c.el.hidden=true;c.angry=!!angry;return;}
   c.state='out';c.slot.c=null;c.tx=0;c.tz=8.2;c.path=[{x:0,z:DOOR.z}];c.el.hidden=true;c.angry=!!angry;
+}
+function spawnDriveCust(){
+  const slot=DS.find(s=>!s.c);if(!slot)return;
+  const tmp={x:-50,z:13.7,h:Math.PI/2};buildCar(tmp,pick([0x2f7bf0,0x1fb36b,0xf2822c,0x7c4dff,0xd94f8a,0xffc83d,0x3b4252]));
+  tmp.g.position.set(-50,0,13.7);tmp.g.rotation.y=Math.PI/2;
+  const dm=()=>({rotation:{x:0}});
+  const ch={group:tmp.g,legL:dm(),legR:dm(),armL:dm(),armR:dm()};
+  const el=document.createElement('div');el.className='bubble';el.hidden=true;overlay.appendChild(el);
+  const o={id:oid++,kind:'counter',drive:true,toppings:randTop(),stage:'new',cust:null,drink:Math.random()<0.7?DRK[Math.floor(Math.random()*DRK.length)]:null};
+  const c={ch,slot,el,order:o,state:'in',tx:slot.x,tz:slot.z,path:[],pat:90,max:110,wt:0,wait:0,key:'',drive:true,speed:9};
+  o.cust=c;slot.c=c;customers.push(c);orders.push(o);say('A car pulled into the drive-thru lane.','sys');
+}
+function advanceDrive(){
+  for(let i=1;i<DS.length;i++){
+    const c=DS[i].c;
+    if(c&&c.state==='wait'&&!DS[i-1].c){DS[i-1].c=c;DS[i].c=null;c.slot=DS[i-1];c.state='in';c.tx=DS[i-1].x;c.tz=DS[i-1].z;c.path=[];}
+  }
 }
 function bubbleHTML(c){
   const o=c.order;
@@ -708,11 +764,11 @@ function finishCounter(o,by){
     say('Your pizza'+(o.drink?' and '+DR[o.drink].name.toLowerCase():'')+' are ready! Open the box and eat.','good');beep(660,.12,'triangle',.06);
     pcust=null;kill(o);return;
   }
-  const x=c.ch.group.position.x;
-  const tip=Math.round(6*Math.max(0,c.pat)/c.max);
-  const pay=8+o.toppings.length*2+(o.drink?3:0)+tip;
-  G.served++;
-  if(by==='you')earn(pay,'handed over #'+o.id,x,3.4,3.6);else{NPC.cashier.cash+=pay;say('Cashier_Jo served #'+o.id+'.');}
+  const x=c.ch.group.position.x,pz=c.ch.group.position.z;
+  const tip=Math.round(6*Math.max(0,c.pat)/c.max*(G.upg.tipjar?1.5:1));
+  const pay=8+o.toppings.length*2+(o.drink?3:0)+(G.upg.premium?3:0)+tip;
+  G.served++;gainShare(0.004);
+  if(by==='you')earn(pay,'handed over #'+o.id,x,3.4,pz);else{const w=(by&&by.cash!==undefined)?by:NPC.cashier;w.cash+=pay;say(w.name+' served #'+o.id+'.');}
   dismiss(c,false);kill(o);
 }
 function passPizza(h){
@@ -739,11 +795,17 @@ function currentAction(){
     if(h&&h.boxed&&h.order&&h.order.kind==='delivery')return{label:'Load pizza for No. '+HOUSES[h.order.house].num,run:()=>{h.order.stage='car';state.held=null;refreshHeld();say('Loaded #'+h.order.id+'. Drive to No. '+HOUSES[h.order.house].num+'.','sys');beep(500,.1,'triangle');}};
     if(!h)return{label:'Drive the car',run:enterCar};
   }
-  if(job==='cashier'&&pos.z>-1.6&&pos.z<4.5){
+  if(job==='cashier'){
     let best=null,bd=3;
-    for(const c of customers){if(c.state!=='wait')continue;const d=Math.abs(c.ch.group.position.x-pos.x);if(d<bd&&(c.order.stage==='new'||c.order.stage==='ready')){bd=d;best=c;}}
+    for(const c of customers){
+      if(c.state!=='wait'||!(c.order.stage==='new'||c.order.stage==='ready'))continue;
+      let d;
+      if(c.drive){if(c.slot.i!==0||dist(pos.x,pos.z,WINDOW_POS[0],WINDOW_POS[1])>2.6)continue;d=0;}
+      else{if(!(pos.z>-1.6&&pos.z<4.5))continue;d=Math.abs(c.ch.group.position.x-pos.x);}
+      if(d<bd){bd=d;best=c;}
+    }
     if(best){const o=best.order;
-      if(o.stage==='new')return{label:'Take order',run:()=>{o.stage='cook';best.pat=Math.min(best.max,best.pat+25);earn(3,'took order #'+o.id,best.ch.group.position.x,3.4,3.6);say('Order #'+o.id+': '+fullName(o)+'.','sys');}};
+      if(o.stage==='new')return{label:'Take order',run:()=>{o.stage='cook';best.pat=Math.min(best.max,best.pat+25);earn(3,'took order #'+o.id,best.ch.group.position.x,3.4,best.ch.group.position.z);say('Order #'+o.id+': '+fullName(o)+'.','sys');}};
       if(o.drink&&!(h&&h.cup===o.id))return{label:'Needs '+DR[o.drink].name+' first',run:()=>say('Pour the '+DR[o.drink].name.toLowerCase()+' at the Drinks fountain, then hand over.','sys')};
       return{label:'Hand over '+fullName(o),run:()=>{finishCounter(o,'you');if(h&&h.cup){state.held=null;refreshHeld();}}};
     }
@@ -767,7 +829,8 @@ function currentAction(){
     if(id==='sauce'){if(!(h&&!h.sauce&&!h.baked))return null;return STOCK.sauce<=0?oos('sauce'):{label:'Add sauce',run:()=>{useStock('sauce');h.sauce=true;refreshHeld();beep(360,.08);}};}
     if(id==='cheese'){if(!(h&&h.sauce&&!h.cheese))return null;return STOCK.cheese<=0?oos('cheese'):{label:'Add cheese',run:()=>{useStock('cheese');h.cheese=true;refreshHeld();beep(420,.08);}};}
     if(TOPST[id]){const t=TOPST[id];if(!(h&&h.cheese&&!h.baked&&!h.toppings.includes(t)&&h.toppings.length<2))return null;return STOCK[id]<=0?oos(id):{label:'Add '+t,run:()=>{useStock(id);h.toppings.push(t);refreshHeld();beep(480,.08);}};}
-    if(id==='oven'){
+    if(id==='oven'||id==='oven2'){
+      const ov=id==='oven2'?OVENS[1]:OVENS[0];
       if(ov.pizza){
         if(ov.pizza.baked&&!h)return{label:ov.pizza.burnt?'Take burnt pizza':'Take pizza out',run:()=>{state.held=ov.pizza;ov.pizza=null;ov.t=0;refreshHeld();refreshOven();beep(520,.1);}};
         return null;
@@ -787,6 +850,10 @@ function currentAction(){
       return{label:'Take '+STN[need]+' crate',run:()=>{state.held={crate:need};refreshHeld();beep(300,.08);}};
     }
     if(h&&h.crate&&id===h.crate)return{label:'Restock '+STN[id],run:()=>{STOCK[id]=Math.min(STMAX,STOCK[id]+CRATE);state.held=null;refreshHeld();refreshStock();earn(5,'restocked '+STN[id].toLowerCase());}};
+  }
+  if(job==='manager'&&id==='office'){
+    if(G.books<=0)return{label:'Review the books',run:()=>{G.books=20;earn(25,'reviewed the books');}};
+    return null;
   }
   if(job==='manager'&&id==='desk'){
     if(G.paper<=0)return{label:'Do paperwork',run:()=>{G.paper=14;earn(8,'paperwork done');}};
@@ -828,6 +895,228 @@ $('orderBtn').addEventListener('click',()=>{
   o.cust=pcust;orders.push(o);
   say('You ordered '+fullName(o)+' for $'+price+'.','sys');beep(600,.1,'triangle',.06);
 });
+/* ---------- rival restaurants ---------- */
+const RIV=[
+  {id:'slice',name:'Slice Kings',x:-34,z:4,wall:0xb9d5f5,roof:0x2f4f8f,accent:'#2f7bf0',share:0.25,promo:0,at:3,active:true},
+  {id:'crust',name:'Crust Brothers',x:34,z:4,wall:0xf7e0a0,roof:0x8f6a1f,accent:'#e8a317',share:0.25,promo:0,at:5,active:true},
+  {id:'rosa',name:"Mama Rosa's",x:52,z:4,wall:0xf4b8b8,roof:0x8f2f3f,accent:'#e5484d',share:0.2,promo:0,at:7,active:false}
+];
+const WALKERS=[];
+function buildRival(r){
+  const g=new THREE.Group();g.position.set(r.x,0,r.z);scene.add(g);
+  box(9,4,6,r.wall,0,2,0,g);
+  const rf=cyl(0,6.6,2.6,4,r.roof,0,5.3,0,g);rf.rotation.y=Math.PI/4;rf.scale.z=0.75;
+  box(1.6,2.4,0.2,0x6a3f24,0,1.2,3.05,g);box(1.8,1.3,0.15,0x9fdcff,-2.8,2.0,3.05,g);box(1.8,1.3,0.15,0x9fdcff,2.8,2.0,3.05,g);
+  for(let i=0;i<7;i++){const a=box(0.9,0.08,1.2,i%2?0xffffff:parseInt(r.accent.slice(1),16),-2.7+i*0.9,3.15,3.6,g);a.rotation.x=0.3;}
+  const mk=(txt,col,w,h,fs)=>{const cv=document.createElement('canvas');cv.width=512;cv.height=Math.round(512*h/w);const x=cv.getContext('2d');
+    x.fillStyle=col;x.fillRect(0,0,cv.width,cv.height);x.strokeStyle='#fff';x.lineWidth=8;x.strokeRect(6,6,cv.width-12,cv.height-12);
+    x.fillStyle='#fff';x.font='800 '+fs+'px Montserrat, "Arial Black", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(txt,cv.width/2,cv.height/2+2);
+    return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));};
+  const sg=mk(r.name.toUpperCase(),r.accent,4.6,0.9,52);sg.position.set(0,4.0,3.12);g.add(sg);
+  const bn=mk('HALF-PRICE PIZZA!','#d6361f',4.6,0.8,46);bn.position.set(0,0.55,3.2);bn.visible=false;g.add(bn);r.banner=bn;
+  for(const sx of [-3.6,3.6]){cyl(0.5,0.35,0.7,6,0xc8691f,sx,0.35,3.9,g);ico(0.7,0x3e9b4f,sx,1.2,3.9,g);}
+  r.door=[r.x,7.6];r.built=true;
+}
+const activeRivals=()=>RIV.filter(r=>r.active);
+const rivalShare=()=>activeRivals().reduce((a,r)=>a+r.share+(r.promo>0?0.08:0),0);
+const playerShare=()=>Math.max(0.1,1-rivalShare());
+const mShare=()=>Math.max(0.5,Math.min(1.6,playerShare()/0.5));
+function gainShare(x){const a=activeRivals();a.forEach(r=>{r.share=Math.max(0.12,r.share-x/a.length);});}
+function loseShare(x){const a=activeRivals();a.forEach(r=>{r.share=Math.min(0.4,r.share+x/a.length);});}
+function pickRival(){const a=activeRivals();let t=a.reduce((q,r)=>q+r.share,0),v=Math.random()*t;for(const r of a){v-=r.share;if(v<=0)return r;}return a[0];}
+function addWalker(sx,path){
+  const ch=makeChar({skin:pick(SKIN),shirt:pick(SHIRT),pants:pick(PANTS),hair:pick(HAIR),hat:{type:pick(['cap','beanie','cowboy','tophat','hard']),c:pick(HATC)}});
+  ch.group.position.set(sx,0,10.6);WALKERS.push({ch,path:path.map(p=>p.slice()),wt:Math.random()*6});
+}
+function defect(c){
+  const r=pickRival();if(!r)return;
+  loseShare(0.012);say('A customer stormed off to '+r.name+'.','bad');
+  addWalker(c.drive?-2:0,[[r.x,10.6],[r.x,r.door[1]]]);
+}
+function updateWalkers(dt){
+  for(let i=WALKERS.length-1;i>=0;i--){
+    const w=WALKERS[i],g=w.ch.group,t=w.path[0];
+    if(!t){scene.remove(g);WALKERS.splice(i,1);continue;}
+    const dx=t[0]-g.position.x,dz=t[1]-g.position.z,d=Math.hypot(dx,dz);
+    if(d<0.15){w.path.shift();continue;}
+    const stp=Math.min(d,2.8*dt);g.position.x+=dx/d*stp;g.position.z+=dz/d*stp;
+    g.rotation.y=turn(g.rotation.y,Math.atan2(dx,dz),Math.min(1,dt*10));
+    w.wt+=dt*8;swing(w.ch,w.wt,0.7,false);g.position.y=Math.abs(Math.sin(w.wt))*0.05;
+  }
+}
+function rivalStep(dt){
+  const a=activeRivals();
+  for(const r of a){
+    r.promo=Math.max(0,r.promo-dt);
+    r.share+=(0.25-r.share)*0.002*dt;
+    if(r.banner){r.banner.visible=r.promo>0&&Math.sin(clock*6)>-0.3;}
+    r.at-=dt;
+    if(r.at<=0&&WALKERS.length<12){r.at=(6+Math.random()*4)*0.25/Math.max(0.1,r.share);addWalker(r.x+(Math.random()<.5?-1:1)*(10+Math.random()*8),[[r.x,10.6],[r.x,r.door[1]]]);}
+  }
+  G.pcd-=dt;
+  if(G.pcd<=0){
+    G.pcd=45+Math.random()*30;
+    if(!a.some(r=>r.promo>0)){const r=pick(a);r.promo=30;say(r.name+' launched a half-price pizza promo! They are stealing your customers.','bad');beep(240,.2,'sawtooth',.05);}
+  }
+  const r3=RIV[2];
+  if(!r3.active&&G.cash>=400){r3.active=true;buildRival(r3);RIV[0].share=Math.max(0.13,RIV[0].share-0.1);RIV[1].share=Math.max(0.13,RIV[1].share-0.1);say("A new rival just opened: Mama Rosa's.",'bad');}
+  updateWalkers(dt);
+}
+function counterPromo(){
+  if(G.cash<40||!activeRivals().some(r=>r.promo>0))return;
+  G.cash-=40;activeRivals().forEach(r=>{r.promo=0;});gainShare(0.05);
+  say('Counter-promotion! Rival promos cancelled and you won back customers.','good');beep(660,.12,'triangle',.07);setTimeout(()=>beep(990,.18,'triangle',.07),110);renderShop();
+}
+function renderShare(){
+  const a=activeRivals(),p=playerShare();
+  let h='<div class="sh"><span>You</span><div class="bar"><i style="width:'+(p*100)+'%;background:#00b06f"></i></div><em>'+Math.round(p*100)+'%</em></div>';
+  for(const r of a){const v=r.share+(r.promo>0?0.08:0);h+='<div class="sh'+(r.promo>0?' promo':'')+'"><span>'+r.name+'</span><div class="bar"><i style="width:'+(v*100)+'%;background:'+r.accent+'"></i></div><em>'+Math.round(v*100)+'%</em></div>';}
+  $('share').innerHTML=h;
+}
+/* ---------- upgrades ---------- */
+function buildDriveThru(){
+  const g=new THREE.Group();scene.add(g);
+  box(1.7,0.75,0.08,0x1c1f22,-6,0.72,9.5,g);box(1.5,0.55,0.05,0x9fdcff,-6,0.72,9.55,g);
+  for(let i=0;i<5;i++){const a=box(0.5,0.08,1.1,i%2?0xffffff:0xd6361f,-7.0+i*0.5,1.7,9.95,g);a.rotation.x=0.3;}
+  box(0.07,0.5,0.07,0x1c1f22,-7.2,1.45,9.55,g);box(0.07,0.5,0.07,0x1c1f22,-4.8,1.45,9.55,g);
+  const cv=document.createElement('canvas');cv.width=512;cv.height=128;const x=cv.getContext('2d');
+  x.fillStyle='#14b8a6';x.fillRect(0,0,512,128);x.strokeStyle='#fff';x.lineWidth=8;x.strokeRect(6,6,500,116);
+  x.fillStyle='#fff';x.font='800 64px Montserrat, "Arial Black", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('DRIVE-THRU',256,68);
+  const sg=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.6),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));
+  sg.position.set(-6,2.55,9.6);sg.rotation.x=-0.45;g.add(sg);
+  box(0.07,0.7,0.07,0x1c1f22,-7.1,2.1,9.5,g);box(0.07,0.7,0.07,0x1c1f22,-4.9,2.1,9.5,g);
+  box(0.15,1.6,0.15,0x39414d,-6.9,0.8,11.9,g);box(0.45,0.55,0.15,0x1c1f22,-6.9,1.7,11.9,g);box(0.3,0.3,0.05,0x7fe0b0,-6.9,1.75,11.97,g);
+  const ol=label('Order here',.7);ol.position.set(-6.9,2.8,11.9);g.add(ol);
+  for(let i=0;i<4;i++)box(5.5,0.02,0.18,0xffffff,-9-i*6,0.02,15.5,g).castShadow=false;
+}
+const PL={x0:4.6,x1:10.2,z0:3.9,z1:8.3,h:2.6},RAMP={x0:2.0,x1:4.6,z0:5.2,z1:7.0};
+const inP=(x,z)=>x>=PL.x0&&x<=PL.x1&&z>=PL.z0&&z<=PL.z1;
+const inR=(x,z)=>x>=RAMP.x0&&x<=RAMP.x1&&z>=RAMP.z0&&z<=RAMP.z1;
+function floorY(x,z){if(!G.upg.floor)return 0;if(inP(x,z))return PL.h;if(inR(x,z))return PL.h*(x-RAMP.x0)/(RAMP.x1-RAMP.x0);return 0;}
+const DINERS=[];let discoBall=null;
+const TABLES=[[6.0,4.9],[7.9,4.9],[6.0,7.3],[7.9,7.3]];
+function buildSecondFloor(){
+  const g=new THREE.Group();scene.add(g);
+  const cx=(PL.x0+PL.x1)/2,cz=(PL.z0+PL.z1)/2,w=PL.x1-PL.x0,d=PL.z1-PL.z0,h=PL.h;
+  const slab=new THREE.Mesh(new THREE.BoxGeometry(w,0.18,d),new THREE.MeshStandardMaterial({color:0xcfe6ff,transparent:true,opacity:0.45,roughness:.2,metalness:.1}));
+  slab.position.set(cx,h-0.09,cz);slab.receiveShadow=true;g.add(slab);
+  box(w,0.22,0.2,0x39414d,cx,h-0.2,PL.z0,g);box(w,0.22,0.2,0x39414d,cx,h-0.2,PL.z1,g);box(0.2,0.22,d,0x39414d,PL.x0,h-0.2,cz,g);box(0.2,0.22,d,0x39414d,PL.x1,h-0.2,cz,g);
+  for(const [x,z] of [[PL.x0,PL.z0],[PL.x1,PL.z0],[PL.x0,PL.z1],[PL.x1,PL.z1],[cx,PL.z1],[cx,PL.z0]])box(0.25,h,0.25,0x39414d,x,h/2,z,g).castShadow=false;
+  const rail=(x,z,lx,lz)=>{box(lx,0.08,lz,0xffffff,x,h+0.95,z,g);box(lx,0.06,lz,0xffffff,x,h+0.5,z,g);};
+  rail(cx,PL.z1,w,0.08);rail(cx,PL.z0,w,0.08);rail(PL.x1,cz,0.08,d);
+  rail(PL.x0,(PL.z0+RAMP.z0)/2,0.08,RAMP.z0-PL.z0);rail(PL.x0,(RAMP.z1+PL.z1)/2,0.08,PL.z1-RAMP.z1);
+  for(let x=PL.x0;x<=PL.x1+0.01;x+=1.4){box(0.08,0.95,0.08,0xffffff,x,h+0.48,PL.z1,g);box(0.08,0.95,0.08,0xffffff,x,h+0.48,PL.z0,g);}
+  for(let z=PL.z0;z<=PL.z1+0.01;z+=1.4)box(0.08,0.95,0.08,0xffffff,PL.x1,h+0.48,z,g);
+  const n=8,dx=(RAMP.x1-RAMP.x0)/n;
+  for(let i=0;i<n;i++){const top=(i+0.6)*h/n;box(dx,top,RAMP.z1-RAMP.z0,0xd8a560,RAMP.x0+(i+0.5)*dx,top/2,(RAMP.z0+RAMP.z1)/2,g);}
+  box(0.08,0.9,0.08,0xffffff,RAMP.x0,0.5,RAMP.z0,g);box(0.08,0.9,0.08,0xffffff,RAMP.x0,0.5,RAMP.z1,g);
+  for(const [tx,tz] of TABLES){
+    cyl(0.1,0.1,0.8,6,0x8a5a3c,tx,h+0.4,tz,g);cyl(0.7,0.7,0.07,10,0xf3e4c4,tx,h+0.82,tz,g);
+    for(const sx of [-0.95,0.95]){box(0.5,0.08,0.5,0xd6361f,tx+sx,h+0.45,tz,g);box(0.08,0.5,0.5,0xd6361f,tx+sx+(sx<0?-0.22:0.22),h+0.7,tz,g);}
+  }
+  cyl(0.5,0.35,0.7,6,0xc8691f,5.0,h+0.35,3.4+0.9,g);ico(0.7,0x3e9b4f,5.0,h+1.2,4.3,g);
+  const l=label('Upstairs',.7);l.position.set(3.0,3.4,6.1);scene.add(l);
+}
+function dinerChar(seat){
+  const ch=makeChar({skin:pick(SKIN),shirt:pick(SHIRT),pants:pick(PANTS),hair:pick(HAIR),hat:{type:pick(['cap','beanie','cowboy','tophat','hard']),c:pick(HATC)}});
+  ch.group.position.set(seat[0],PL.h-0.42,seat[1]);ch.group.rotation.y=Math.PI/2;
+  ch.legL.rotation.x=-1.45;ch.legR.rotation.x=-1.45;
+  return {ch,ph:Math.random()*6,seat};
+}
+function spawnDiners(){for(const [tx,tz] of TABLES)DINERS.push(dinerChar([tx-0.95,tz]));}
+function dinerTick(){
+  if(!DINERS.length)return;
+  const i=Math.floor(Math.random()*DINERS.length),old=DINERS[i];
+  scene.remove(old.ch.group);const nd=dinerChar(old.seat);DINERS[i]=nd;
+  const pay=4+Math.floor(Math.random()*5)+(G.party>0?3:0);
+  G.cash+=pay;say('+$'+pay+' tip from an upstairs diner','good');pop('+$'+pay,old.seat[0],PL.h+3,old.seat[1],'good');beep(720,.07,'triangle',.04);
+}
+function buildOffice(){
+  const g=new THREE.Group();g.position.set(9.85,PL.h,6.1);scene.add(g);
+  box(0.9,0.95,2.3,0x6a4a8a,0,0.48,0,g);box(1.0,0.1,2.4,0xe9e2f5,0,1.0,0,g);
+  box(0.1,0.7,1.0,0x222831,-0.15,1.45,0,g);box(0.4,0.04,0.7,0xffffff,-0.1,1.07,0.55,g);
+  box(0.6,0.1,0.6,0x2b3038,-1.0,0.5,0,g);box(0.08,0.8,0.6,0x2b3038,-1.28,0.9,0,g);
+  const l=label('Executive office',.75);l.position.set(9.4,PL.h+2.2,6.1);scene.add(l);
+  ST.push({id:'office',x:9.0,z:6.1});
+}
+function buildDisco(){
+  const m=new THREE.Mesh(new THREE.IcosahedronGeometry(0.45,1),new THREE.MeshBasicMaterial({color:0xe8eef5}));
+  m.position.set(7.0,PL.h+2.5,6.1);scene.add(m);discoBall=m;
+  const ch=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.4,4),mat(0x8a949f));ch.position.set(7.0,PL.h+3.4,6.1);scene.add(ch);
+  G.pt=15;
+}
+function buildBillboard(){
+  const g=new THREE.Group();g.position.set(16,0,10.5);scene.add(g);
+  box(0.25,3.2,0.25,0x39414d,-1.6,1.6,0,g);box(0.25,3.2,0.25,0x39414d,1.6,1.6,0,g);
+  const cv=document.createElement('canvas');cv.width=512;cv.height=192;const x=cv.getContext('2d');
+  x.fillStyle='#d6361f';x.fillRect(0,0,512,192);x.strokeStyle='#ffc83d';x.lineWidth=10;x.strokeRect(8,8,496,176);
+  x.fillStyle='#fff6df';x.font='800 58px Montserrat, "Arial Black", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('BEST PIZZA',256,70);x.fillText('IN TOWN',256,132);
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(4,1.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));p.position.set(0,3.3,0.2);p.rotation.x=-0.25;g.add(p);
+  box(4.2,1.7,0.1,0x1c1f22,0,3.3,0.1,g).rotation.x=-0.25;
+}
+function buildKitchenIsland(){
+  const g=new THREE.Group();g.position.set(4.2,0,-3.4);scene.add(g);
+  box(2.6,0.95,1.5,0x8a5a3c,0,0.48,0,g);box(2.8,0.12,1.7,0xf3e4c4,0,1.0,0,g);
+  box(2.2,1.55,1.2,0x555566,0,1.85,-0.05,g);box(2.4,0.14,1.4,0x3a3a46,0,2.7,-0.05,g);box(0.5,0.9,0.5,0x3a3a46,-0.7,3.25,-0.2,g);
+  box(1.5,0.9,0.08,0x1a1a1f,0,1.85,0.58,g);
+  const glow=new THREE.Mesh(new THREE.BoxGeometry(1.3,0.7,0.05),new THREE.MeshBasicMaterial({color:0x4a2a1a}));glow.position.set(0,1.85,0.63);g.add(glow);
+  box(1.7,0.1,0.7,0x3a3a46,0,1.22,0.95,g);
+  const og2=new THREE.Group();og2.position.set(0,1.34,0.95);g.add(og2);
+  const l=label('Oven 2');l.position.set(4.2,3.9,-3.4);scene.add(l);
+  OVENS.push({pizza:null,t:0,id:'oven2',x:4.2,z:-1.7,face:Math.PI,out:[[-8.3,-1.9],[-8.3,-3.6]],g:og2,glow,bx:4.2,by:3.4,bz:-3.4,res:false});
+  ST.push({id:'oven2',x:4.2,z:-1.7});addOvenBar();
+}
+const UPG=[
+  {id:'drive',name:'Drive-thru window',cost:120,desc:'Cars line up on the road in front. Serve them at the new window by the door. More customers, more cash.',apply(){buildDriveThru();G.dsp=3;}},
+  {id:'window',name:'Hire a drive-thru cashier',cost:60,req:'drive',desc:'Window_Pat works the window so your cashiers can stay on the counter.',apply(){activateNPC('window');}},
+  {id:'cook2',name:'Hire a second cook',cost:80,desc:'PizzaChef_Zoe makes pizzas alongside Max.',apply(){activateNPC('cook2');}},
+  {id:'cashier2',name:'Hire a second cashier',cost:70,desc:'Cashier_Ava takes orders and hands over pizzas too.',apply(){activateNPC('cashier2');}},
+  {id:'boxer2',name:'Hire a second box boy',cost:50,desc:'BoxBoy_Sid boxes pizzas and stocks the shelf.',apply(){activateNPC('boxer2');}},
+  {id:'oven',name:'Turbo oven',cost:90,desc:'Pizzas bake in 4 seconds instead of 6.',apply(){BAKE=4;}},
+  {id:'ads',name:'Advertising',cost:100,desc:'Customers show up about 40% more often.',apply(){}},
+  {id:'shoes',name:'Speed shoes',cost:60,desc:'You walk 25% faster.',apply(){}},
+  {id:'car',name:'Delivery car tune-up',cost:80,desc:'Your delivery car accelerates faster and tops out higher.',apply(){}},
+  {id:'kitchen',name:'Bigger kitchen',cost:150,desc:'Adds a prep island with a second oven in the middle of the kitchen. Two pizzas bake at once.',apply(){buildKitchenIsland();}},
+  {id:'fridge',name:'Walk-in fridge',cost:70,desc:'Every ingredient holds 26 instead of 16, and the fridge arrives with 6 extra of each.',apply(){STMAX=26;for(const k in STOCK)STOCK[k]=Math.min(STMAX,STOCK[k]+6);refreshStock();}},
+  {id:'prep',name:'Prep tables',cost:85,desc:'Cooks put pizzas together almost twice as fast.',apply(){PREP=0.4;}},
+  {id:'slots',name:'Bigger dining room',cost:110,desc:'Room for five customers at the counter instead of three.',apply(){SLOTS.push({x:-2.25,c:null},{x:2.25,c:null});}},
+  {id:'lane',name:'Longer drive-thru lane',cost:60,req:'drive',desc:'Room for five cars in line instead of three.',apply(){DS.push({i:3,x:-22.5,z:13.7,c:null},{i:4,x:-28,z:13.7,c:null});}},
+  {id:'premium',name:'Premium ingredients',cost:120,desc:'Every counter, drive-thru and delivery sale pays $3 more.',apply(){}},
+  {id:'tipjar',name:'Tip jar',cost:40,desc:'Tips from happy customers are 50% bigger.',apply(){}},
+  {id:'floor',name:'Second floor',cost:250,desc:'Builds a glass-floored upper level over the right side of the dining room. Take the stairs by the door. Unlocks the upstairs upgrades below.',apply(){buildSecondFloor();}},
+  {id:'diners',name:'Upstairs diners',cost:90,req:'floor',desc:'Four tables upstairs fill with diners who tip you every few seconds.',apply(){spawnDiners();}},
+  {id:'office',name:'Executive office',cost:110,req:'floor',desc:'A manager desk upstairs. Managers can review the books there for $25 every 20 seconds.',apply(){buildOffice();}},
+  {id:'karaoke',name:'Karaoke night',cost:70,req:'floor',desc:'A disco ball upstairs. Every 75 seconds a karaoke rush brings customers twice as fast for 25 seconds.',apply(){buildDisco();}},
+  {id:'billboard',name:'Billboard',cost:130,desc:'A big sign by the road wins you 4% market share from the rivals.',apply(){buildBillboard();gainShare(0.04);}},
+  {id:'loyalty',name:'Loyalty cards',cost:80,desc:'Regulars are more patient and are less likely to storm off to a rival.',apply(){}},
+  {id:'stockroom',name:'Stockroom',cost:100,desc:'Supplier_Sam restocks earlier and gets back to work faster.',apply(){}}
+];
+function activateNPC(k){const n=NPC[k];n.active=true;resetNPC(k);syncNPCs();renderPlayers();}
+function renderShop(){
+  $('shopCash').textContent='Your cash: $'+G.cash;
+  const act=activeRivals().some(r=>r.promo>0);
+  const rivalCard='<div class="up"><div><b>Counter-promotion</b><small>'+(act?'A rival is running a promo right now. Cancel it and win back 5% market share.':'Cancels rival promotions and wins back 5% market share. Available while a rival promo is running.')+'</small></div><button class="buy" id="cpBtn"'+((act&&G.cash>=40)?'':' disabled')+'>Run it $40</button></div>';
+  $('shopList').innerHTML=rivalCard+UPG.map(u=>{
+    const owned=!!G.upg[u.id],locked=u.req&&!G.upg[u.req];
+    const btn=owned?'<button class="buy" disabled>Owned</button>':locked?'<button class="buy" disabled>Needs '+UPG.find(x=>x.id===u.req).name+'</button>':'<button class="buy" data-buy="'+u.id+'"'+(G.cash<u.cost?' disabled':'')+'>Buy $'+u.cost+'</button>';
+    return '<div class="up"><div><b>'+u.name+'</b><small>'+u.desc+'</small></div>'+btn+'</div>';
+  }).join('');
+  const cp=$('cpBtn');if(cp)cp.addEventListener('click',counterPromo);
+  document.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>buyUpgrade(b.dataset.buy)));
+}
+function buyUpgrade(id){
+  const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;
+  if(u.req&&!G.upg[u.req])return;
+  if(G.cash<u.cost){say('Not enough cash for '+u.name+'.','bad');return;}
+  G.cash-=u.cost;G.upg[id]=true;u.apply();
+  say('Upgrade bought: '+u.name+'.','good');beep(660,.12,'triangle',.07);setTimeout(()=>beep(990,.18,'triangle',.07),110);
+  renderShop();
+}
+function openShop(){if(!G.playing||menuOpen)return;menuOpen=true;renderShop();$('shop').hidden=false;}
+function closeShop(){menuOpen=false;$('shop').hidden=true;}
+$('shopBtn').addEventListener('click',openShop);
+$('shopClose').addEventListener('click',closeShop);
+
 function setJob(j){
   if(j===job)return;
   if(driving)exitCar();
@@ -891,19 +1180,19 @@ function runSteps(n,dt){
 function homeSteps(n){return [W(n.x,n.z),Dd(()=>{n.ch.group.rotation.y=n.ry;})];}
 function resetNPC(k){
   const n=NPC[k];
-  if(n.cur){n.cur.claim=false;n.cur.tclaim=false;n.cur.hclaim=false;if(k==='delivery'&&(n.cur.stage==='carry'||n.cur.stage==='car'))n.cur.stage='ready';if(k==='boxer'&&n.cur.stage==='carry')n.cur.stage='box';}
-  if(k==='cashier')orders.forEach(o=>{o.tclaim=false;o.hclaim=false;});
-  if(k==='manager')messes.forEach(m=>{m.claimed=false;});
-  if(n.pz&&state.oven.pizza===n.pz){state.oven.pizza=null;refreshOven();}
+  if(n.cur){n.cur.claim=false;n.cur.tclaim=false;n.cur.hclaim=false;if(n.role==='delivery'&&(n.cur.stage==='carry'||n.cur.stage==='car'))n.cur.stage='ready';if(n.role==='boxer'&&n.cur.stage==='carry')n.cur.stage='box';}
+  if(n.role==='cashier')orders.forEach(o=>{o.tclaim=false;o.hclaim=false;});
+  if(n.role==='manager')messes.forEach(m=>{m.claimed=false;});
+  OVENS.forEach(o=>{if(n.pz&&o.pizza===n.pz)o.pizza=null;});if(n.ovn){n.ovn.res=false;n.ovn=null;}refreshOven();
   n.pz=null;n.cur=null;n.needsCur=false;n.steps=[];npcHold(n,null);n.inCar=false;
-  if(k==='delivery')parkCar2();
+  if(n.role==='delivery')parkCar2();
   n.ch.group.position.set(n.x,0,n.z);n.ch.group.rotation.y=n.ry;
 }
 function abortNPC(k){
   const n=NPC[k];
-  if(n.pz&&state.oven.pizza===n.pz){state.oven.pizza=null;refreshOven();}
+  OVENS.forEach(o=>{if(n.pz&&o.pizza===n.pz)o.pizza=null;});if(n.ovn){n.ovn.res=false;n.ovn=null;}refreshOven();
   n.pz=null;npcHold(n,null);n.needsCur=false;
-  if(k==='delivery'){
+  if(n.role==='delivery'){
     if(n.inCar){n.steps=[V(11,17.2),V(11,13.6),Dd(()=>{parkCar2();n.inCar=false;n.ch.group.position.set(11,0,11.4);n.ch.group.visible=true;n.tag.visible=true;}),W(POST[0],POST[1]),Dd(()=>{n.ch.group.rotation.y=0;})];return;}
     const g=n.ch.group.position,pts=[];
     if(g.z<9.4){if(g.z<3)pts.push([8.9,0.3]);pts.push([8.9,3.6],[0.5,8.0],[0.5,10.4]);}
@@ -911,22 +1200,38 @@ function abortNPC(k){
   }
   n.steps=homeSteps(n);
 }
-const PLAN={
-  cashier(n){
-    for(const c of allCust()){
-      if(c.state!=='wait')continue;const o=c.order,sx=c.slot.x;
-      if(o.stage==='new'&&c.wait>2.5&&!o.tclaim){
-        o.tclaim=true;n.cur=o;n.needsCur=true;
-        n.steps=[W(sx,0.3),T(1.4,0,'work'),Dd(()=>{if(!o.dead&&o.stage==='new'){o.stage='cook';c.pat=Math.min(c.max,c.pat+25);n.cash+=3;say('Cashier_Jo took order #'+o.id+': '+oname(o)+'.','sys');}n.cur=null;n.needsCur=false;}),...homeSteps(n)];
-        return;
-      }
-      if(o.stage==='ready'&&!o.hclaim&&(!c.isPlayer||(pos.z>2.4&&pos.z<6.5))){
-        o.hclaim=true;n.cur=o;n.needsCur=true;
-        n.steps=[...(o.drink?[W(-3.4,0.3),T(1.1,0,'work'),Dd(()=>{o.poured=true;npcHold(n,{drink:o.drink},'cup');})]:[]),W(6.4,0.3),T(.6,0,'work'),Dd(()=>{npcHold(n,{boxed:true,toppings:o.toppings});}),W(sx,0.3),T(.8,0,'hold'),Dd(()=>{if(!o.dead&&c.state==='wait')finishCounter(o,'npc');npcHold(n,null);n.cur=null;n.needsCur=false;}),...homeSteps(n)];
-        return;
-      }
+const RW=[[8.9,0.3],[8.9,3.6],[0.5,8.0],[-6,8.0]];
+const pts=a=>a.map(p=>W(p[0],p[1]));
+function planCounter(n,ok){
+  const atWin=n.role==='window';
+  for(const c of allCust()){
+    if(c.state!=='wait'||!ok(c))continue;
+    if(c.drive&&c.slot.i!==0)continue;
+    const o=c.order,drv=!!c.drive,sx=drv?WINDOW_POS[0]:c.slot.x,sz=drv?WINDOW_POS[1]:0.3;
+    const toCust=drv?(atWin?[]:pts(RW)):[W(sx,sz)];
+    const fromCust=drv&&!atWin?pts(RW.slice().reverse()):[];
+    if(o.stage==='new'&&c.wait>2.5&&!o.tclaim){
+      o.tclaim=true;n.cur=o;n.needsCur=true;
+      n.steps=[...toCust,T(1.4,0,'work'),Dd(()=>{if(!o.dead&&o.stage==='new'){o.stage='cook';c.pat=Math.min(c.max,c.pat+25);n.cash+=3;say(n.name+' took order #'+o.id+': '+fullName(o)+'.','sys');}n.cur=null;n.needsCur=false;}),...fromCust,...homeSteps(n)];
+      return;
     }
-  },
+    if(o.stage==='ready'&&!o.hclaim&&(!c.isPlayer||(pos.z>2.4&&pos.z<6.5))){
+      o.hclaim=true;n.cur=o;n.needsCur=true;
+      const pre=[];
+      if(o.drink){
+        if(atWin&&drv)pre.push(...pts([[-8.4,8.0],[-8.4,0.3],[-3.4,0.3]]));else pre.push(W(-3.4,0.3));
+        pre.push(T(1.1,0,'work'),Dd(()=>{o.poured=true;npcHold(n,{drink:o.drink},'cup');}));
+      }else if(atWin&&drv)pre.push(...pts([[0.5,8.0],[8.9,3.6],[8.9,0.3]]));
+      n.steps=[...pre,W(6.4,0.3),T(.6,0,'work'),Dd(()=>{npcHold(n,{boxed:true,toppings:o.toppings});}),
+        ...(drv?pts(RW):[W(sx,sz)]),T(.8,0,'hold'),
+        Dd(()=>{if(!o.dead&&c.state==='wait')finishCounter(o,n);npcHold(n,null);n.cur=null;n.needsCur=false;}),...fromCust,...homeSteps(n)];
+      return;
+    }
+  }
+}
+const PLAN={
+  cashier(n){planCounter(n,c=>!c.drive||!NPC.window.active);},
+  window(n){planCounter(n,c=>!!c.drive);},
   cook(n){
     const need=o=>{const c={dough:1,sauce:1,cheese:1};o.toppings.forEach(t=>{const k=t==='pepperoni'?'pep':t;c[k]=(c[k]||0)+1;});return c;};
     const o=orders.find(o=>o.stage==='cook'&&!o.claim&&Object.entries(need(o)).every(([k,v])=>STOCK[k]>=v));
@@ -935,14 +1240,15 @@ const PLAN={
     Object.entries(need(o)).forEach(([k,v])=>{STOCK[k]-=v;});refreshStock();
     const pz={sauce:false,cheese:false,toppings:[]};n.pz=pz;
     const z=-6.5,st=[];
-    const stop=(x,fn)=>{st.push(W(x,z),T(.8,Math.PI,'work'),Dd(fn));};
+    const stop=(x,fn)=>{st.push(W(x,z),T(PREP,Math.PI,'work'),Dd(fn));};
     stop(SX.dough,()=>{npcHold(n,pz);});
     stop(SX.sauce,()=>{pz.sauce=true;npcHold(n,pz);});
     stop(SX.cheese,()=>{pz.cheese=true;npcHold(n,pz);});
     for(const t of o.toppings){const sid=t==='pepperoni'?'pep':t;stop(SX[sid],()=>{pz.toppings.push(t);npcHold(n,pz);});}
-    st.push(W(8.2,-4.2),U(()=>!state.oven.pizza),Dd(()=>{state.oven.pizza=pz;state.oven.t=0;npcHold(n,null);refreshOven();}),T(.3,-Math.PI/2,'work'),
-      U(()=>pz.baked),Dd(()=>{state.oven.pizza=null;state.oven.t=0;refreshOven();npcHold(n,pz);}),
-      W(8.2,-5.6),W(-8.3,-5.6),W(-8.3,-3.6),T(.7,-Math.PI/2,'hold'),
+    const ovn=OVENS.find(o=>!o.pizza&&!o.res)||OVENS[0];ovn.res=true;n.ovn=ovn;
+    st.push(W(ovn.x,ovn.z),U(()=>!ovn.pizza),Dd(()=>{ovn.pizza=pz;ovn.t=0;ovn.res=false;n.ovn=null;npcHold(n,null);refreshOven();}),T(.3,ovn.face,'work'),
+      U(()=>pz.baked),Dd(()=>{ovn.pizza=null;ovn.t=0;refreshOven();npcHold(n,pz);}),
+      ...pts(ovn.out),T(.7,-Math.PI/2,'hold'),
       Dd(()=>{if(!o.dead){o.stage='box';o.claim=false;n.cash+=7;}n.cur=null;n.needsCur=false;n.pz=null;npcHold(n,null);}),...homeSteps(n));
     n.steps=st;
   },
@@ -954,12 +1260,12 @@ const PLAN={
   },
   supplier(n){
     if(n.cool>0)return;
-    const k=lowest();if(STOCK[k]>=6)return;
+    const k=lowest();if(STOCK[k]>=(G.upg.stockroom?9:6))return;
     const sx=SX[k];
     n.steps=[W(-8,10.0),T(.9,0,'work'),Dd(()=>{npcHold(n,k,'crate');}),
       W(-1,10.4),W(0.5,8.0),W(-8.4,8.0),W(-8.4,0.3),W(-8.4,-5.4),W(sx,-6.3),T(1,Math.PI,'hold'),
       Dd(()=>{STOCK[k]=Math.min(STMAX,STOCK[k]+CRATE);refreshStock();n.cash+=5;npcHold(n,null);say('Supplier_Sam restocked '+STN[k].toLowerCase()+'.','sys');}),
-      W(-8.4,-5.4),W(-8.4,0.3),W(-8.4,8.0),W(0.5,8.0),W(-1,10.4),...homeSteps(n),Dd(()=>{n.cool=8;})];
+      W(-8.4,-5.4),W(-8.4,0.3),W(-8.4,8.0),W(0.5,8.0),W(-1,10.4),...homeSteps(n),Dd(()=>{n.cool=G.upg.stockroom?2:8;})];
   },
   manager(n){
     const m=messes.find(m=>!m.claimed);if(!m)return;
@@ -977,7 +1283,7 @@ const PLAN={
       ...SHELF_OUT.map(p=>W(p[0],p[1])),
       Dd(()=>{if(!o.dead)o.stage='car';npcHold(n,null);n.ch.group.visible=false;n.tag.visible=false;n.inCar=true;}),
       V(11,17.2),V(hx,17.5),
-      Dd(()=>{const pay=16+o.toppings.length*2+Math.round(12*Math.max(0,o.pat)/o.max);n.cash+=pay;say('Driver_Kai delivered #'+o.id+' to No. '+HOUSES[o.house].num+'.','sys');n.needsCur=false;kill(o);}),
+      Dd(()=>{const pay=16+o.toppings.length*2+(G.upg.premium?3:0)+Math.round(12*Math.max(0,o.pat)/o.max);n.cash+=pay;gainShare(0.004);say('Driver_Kai delivered #'+o.id+' to No. '+HOUSES[o.house].num+'.','sys');n.needsCur=false;kill(o);}),
       V(11,17.2),V(11,13.6),
       Dd(()=>{parkCar2();n.inCar=false;n.ch.group.position.set(11,0,11.4);n.ch.group.visible=true;n.tag.visible=true;}),
       W(POST[0],POST[1]),Dd(()=>{n.ch.group.rotation.y=0;})];
@@ -986,12 +1292,12 @@ const PLAN={
 function npcStep(dt0){
   const f=(job==='manager'?1.35:1)*(G.boost>0?1.7:1),dt=dt0*f;
   for(const k in NPC){
-    const n=NPC[k];
-    if(job===k){if(n.steps.length||n.cur||n.pz||n.inCar||n.hold)resetNPC(k);continue;}
+    const n=NPC[k];if(!n.active)continue;
+    if(job===n.role){if(n.steps.length||n.cur||n.pz||n.inCar||n.hold)resetNPC(k);continue;}
     if(n.cool>0)n.cool-=dt0;
     if(n.needsCur&&n.steps.length&&!n.cur)abortNPC(k);
     if(n.steps.length){runSteps(n,dt);continue;}
-    PLAN[k](n);
+    PLAN[n.role](n);
   }
 }
 
@@ -1009,15 +1315,20 @@ function blocked(x,z){
     if(Math.abs(x)<8.3&&z>0.6&&z<3.2)return true;
     if(Math.abs(x)>8.3&&z<-1.2)return true;
     if(Math.hypot(x+7.5,z-6.2)<1.5)return true;
+    if(G.upg.floor){
+      const nIn=inP(x,z),oIn=inP(pos.x,pos.z);
+      if(nIn!==oIn){const rx=nIn?pos.x:x,rz=nIn?pos.z:z;if(!(inR(rx,rz)&&z>=RAMP.z0&&z<=RAMP.z1))return true;}
+    }
+    if(G.upg.kitchen&&Math.abs(x-4.2)<1.5&&z>-4.5&&z<-2.3)return true;
     return false;
   }
   return Math.abs(x)>42||z>12.4;
 }
 function stepCar(dt,th,st){
-  const acc=th>0?18:th<0?(car.v>0?26:12):0;
+  const acc=th>0?(G.upg.car?25:18):th<0?(car.v>0?26:12):0;
   car.v+=th*acc*dt;
   if(th===0)car.v-=Math.sign(car.v)*Math.min(Math.abs(car.v),7*dt);
-  car.v*=1-0.25*dt;car.v=Math.max(-6,Math.min(16,car.v));
+  car.v*=1-0.25*dt;car.v=Math.max(-6,Math.min(G.upg.car?21:16,car.v));
   car.h-=st*2.1*dt*Math.max(-1,Math.min(1,car.v/5));
   car.x+=Math.sin(car.h)*car.v*dt;car.z+=Math.cos(car.h)*car.v*dt;
   const zx=Math.max(-58,Math.min(58,car.x)),zz=Math.max(13.4,Math.min(20.4,car.z));
@@ -1038,6 +1349,8 @@ const keys={};let jx=0,jy=0;
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k)&&G.playing)e.preventDefault();
+  if(!keys[k]&&k==='u'&&G.playing){if($('shop').hidden)openShop();else closeShop();}
+  if(!keys[k]&&k==='escape'){if(!$('shop').hidden)closeShop();else if(!$('menu').hidden)closeMenu();}
   if(!keys[k]&&(k==='e'||k===' '))act();
   keys[k]=true;
 });
@@ -1061,7 +1374,7 @@ function renderBoard(){
   let html='';
   for(const o of list.slice(0,6)){
     const hl=(job==='cashier'&&o.kind==='counter'&&(o.stage==='new'||o.stage==='ready'))||(job==='cook'&&o.stage==='cook')||(job==='boxer'&&o.stage==='box')||(job==='delivery'&&o.kind==='delivery'&&(o.stage==='ready'||o.stage==='carry'||o.stage==='car'));
-    html+='<div class="od'+(hl?' hl':'')+'"><b>#'+o.id+'</b><span>'+(o.stage==='new'?'Customer order':fullName(o))+(o.kind==='delivery'?' to No. '+HOUSES[o.house].num:'')+'</span><i class="st '+o.stage+'">'+STG[o.stage]+'</i></div>';
+    html+='<div class="od'+(hl?' hl':'')+'"><b>#'+o.id+'</b><span>'+(o.stage==='new'?'Customer order':fullName(o))+(o.drive?' (drive-thru)':'')+(o.kind==='delivery'?' to No. '+HOUSES[o.house].num:'')+'</span><i class="st '+o.stage+'">'+STG[o.stage]+'</i></div>';
   }
   if(list.length>6)html+='<div class="more">+'+(list.length-6)+' more</div>';
   if(!list.length)html='<div class="more">No orders yet</div>';
@@ -1075,7 +1388,7 @@ function renderStock(){
 function renderPlayers(){
   let h='<h3>Players</h3>';
   h+='<div class="pl me" style="--c:'+(job?JOBS[job].css:'#0d69ac')+'"><span class="av"></span><span class="nm">You<small>'+(job?JOBS[job].name:'No job')+'</small></span><em>$'+G.cash+'</em></div>';
-  for(const k in NPC){if(job===k)continue;const n=NPC[k];h+='<div class="pl npc" style="--c:'+JOBS[k].css+'"><span class="av"></span><span class="nm">'+n.name+'<small>'+JOBS[k].name+'</small></span><em>$'+n.cash+'</em></div>';}
+  for(const k in NPC){const n=NPC[k];if(!n.active||job===n.role)continue;h+='<div class="pl npc" style="--c:'+JOBS[n.role].css+'"><span class="av"></span><span class="nm">'+n.name+'<small>'+JOBS[n.role].name+'</small></span><em>$'+n.cash+'</em></div>';}
   $('players').innerHTML=h;
 }
 function hintText(){
@@ -1100,7 +1413,7 @@ function hintText(){
     const o=orders.find(o=>o.stage==='cook');
     if(h&&h.baked&&!h.burnt)return '<b>Pass it</b> to the box table on the left wall.';
     if(h)return 'Build: <b>'+(o?oname(o):tname(h.toppings))+'</b>. Sauce, cheese, toppings, then bake.';
-    if(state.oven.pizza)return 'Pizza in the oven. <b>Take it out</b> before it burns.';
+    if(OVENS.some(o=>o.pizza))return 'Pizza in the oven. <b>Take it out</b> before it burns.';
     return o?'Make order #'+o.id+': <b>'+oname(o)+'</b>. Start with dough.':'No orders to cook. Wait for the cashier.';
   }
   if(job==='supplier'){
@@ -1111,6 +1424,7 @@ function hintText(){
   if(job==='manager'){
     if(messes.length)return '<b>Mop the spill</b> in the dining room. Spills make customers lose patience faster.';
     if(G.paper<=0)return 'Do <b>paperwork</b> at the manager desk in the left corner.';
+    if(G.upg.office&&G.books<=0)return 'Go upstairs and <b>review the books</b> at your office desk.';
     if(G.boost>0)return 'Team bonus active: coworkers are working faster for '+Math.ceil(G.boost)+'s.';
     return 'Manager on duty: coworkers work 35% faster. Pay a <b>team bonus ($20)</b> at the desk for more.';
   }
@@ -1128,6 +1442,8 @@ function hintText(){
 const turn=(cur,tgt,k)=>{let d=tgt-cur;d=Math.atan2(Math.sin(d),Math.cos(d));return cur+d*k;};
 const look=new THREE.Vector3(0,0.5,0),camTgt=new THREE.Vector3(),tmp=new THREE.Vector3();
 const ovenBar=document.createElement('div');ovenBar.className='ovenbar';ovenBar.hidden=true;ovenBar.innerHTML='<span></span><div><i></i></div>';overlay.appendChild(ovenBar);
+const OBARS=[ovenBar];
+function addOvenBar(){const b=document.createElement('div');b.className='ovenbar';b.hidden=true;b.innerHTML='<span></span><div><i></i></div>';overlay.appendChild(b);OBARS.push(b);}
 let last=performance.now(),clock=0,lastPrompt='',hudT=0,padCool=0;
 
 function frame(now){
@@ -1145,11 +1461,12 @@ function frame(now){
   const mv=il>0.12&&!frozen;
   if(driving){stepCar(dt,-iz,ix);pos.x=car.x;pos.z=car.z;}
   else if(mv){
-    const nx=pos.x+ix*6.2*dt,nz=pos.z+iz*6.2*dt;
+    const spd=6.2*(G.upg.shoes?1.25:1),nx=pos.x+ix*spd*dt,nz=pos.z+iz*spd*dt;
     if(!blocked(nx,nz)){pos.x=nx;pos.z=nz;}else if(!blocked(nx,pos.z))pos.x=nx;else if(!blocked(pos.x,nz))pos.z=nz;
     face=turn(face,Math.atan2(ix,iz),Math.min(1,dt*14));walkT+=dt*11;
   }
-  player.group.position.set(pos.x,mv&&!driving?Math.abs(Math.sin(walkT))*0.06:0,pos.z);player.group.rotation.y=face;
+  const ty=driving?0:floorY(pos.x,pos.z);pos.y+=(ty-pos.y)*Math.min(1,dt*12);
+  player.group.position.set(pos.x,pos.y+(mv&&!driving?Math.abs(Math.sin(walkT))*0.06:0),pos.z);player.group.rotation.y=face;
   swing(player,walkT,mv&&!driving?0.85:0,!!state.held);
   if(!mv&&!state.held){player.legL.rotation.x=player.legR.rotation.x=0;player.armL.rotation.x=player.armR.rotation.x=0;}
   if(G.eatT>0){player.armL.rotation.x=-1.8+Math.sin(clock*10)*0.25;player.armR.rotation.x=-1.8+Math.sin(clock*10+1)*0.25;}
@@ -1159,17 +1476,21 @@ function frame(now){
   if(G.playing&&!driving&&padCool<=0){for(const p of PADS){if(p.job!==job&&dist(p.x,p.z,pos.x,pos.z)<0.62){setJob(p.job);padCool=1.5;break;}}}
 
   if(G.playing){
-    G.paper=Math.max(0,G.paper-dt);G.boost=Math.max(0,G.boost-dt);
+    rivalStep(dt);
+    G.paper=Math.max(0,G.paper-dt);G.boost=Math.max(0,G.boost-dt);G.books=Math.max(0,G.books-dt);
+    if(G.upg.karaoke){G.pt-=dt;if(G.pt<=0){G.party=25;G.pt=75;say('Karaoke night! Customers arrive twice as fast for 25 seconds.','good');beep(520,.12,'triangle',.06);setTimeout(()=>beep(700,.12,'triangle',.06),130);setTimeout(()=>beep(880,.18,'triangle',.06),260);}G.party=Math.max(0,G.party-dt);}
+    if(G.upg.diners){G.dtick-=dt;if(G.dtick<=0){G.dtick=9+Math.random()*5;dinerTick();}}
     if(G.eatT>0){G.eatT-=dt;if(G.eatT<=0){G.eatT=0;state.held=null;refreshHeld();G.eaten++;say('That was delicious! Pizzas eaten: '+G.eaten+'.','good');beep(780,.15,'triangle',.06);}}
     if(pcust){const o=pcust.order;pcust.wait+=dt;if(o.stage!=='ready')pcust.pat-=dt*(1+0.15*messes.length);if(pcust.pat<=0)cancelPcust('You got tired of waiting. Your order was refunded.');}
     G.mspawn-=dt;
     if(G.mspawn<=0){G.mspawn=22+Math.random()*10;if(messes.length<4)spawnMess();}
     G.spawn-=dt;
-    if(G.spawn<=0&&SLOTS.some(s=>!s.c)){spawnCustomer();G.spawn=8+Math.random()*5;}
+    if(G.spawn<=0&&SLOTS.some(s=>!s.c)){spawnCustomer();G.spawn=(8+Math.random()*5)*(G.upg.ads?0.6:1)*(G.party>0?0.5:1)/mShare();}
+    if(G.upg.drive){G.dsp-=dt;if(G.dsp<=0&&DS.some(s=>!s.c)){spawnDriveCust();G.dsp=(14+Math.random()*8)*(G.upg.ads?0.6:1)*(G.party>0?0.5:1)/mShare();}advanceDrive();}
     G.dspawn-=dt;
     if(G.dspawn<=0&&orders.filter(o=>o.kind==='delivery').length<2){spawnDelivery();G.dspawn=32+Math.random()*12;}
-    const ov=state.oven;
-    if(ov.pizza){
+    for(const ov of OVENS){
+      if(!ov.pizza)continue;
       ov.t+=dt;
       if(!ov.pizza.baked&&ov.t>=BAKE){ov.pizza.baked=true;refreshOven();beep(990,.2,'triangle',.07);}
       if(!ov.pizza.burnt&&ov.t>=BURN){ov.pizza.burnt=true;refreshOven();beep(110,.4,'sawtooth',.06);}
@@ -1183,8 +1504,8 @@ function frame(now){
       if(o.stage==='car'){
         const hs=HOUSES[o.house];
         if(driving&&dist(car.x,car.z,hs.x,hs.z)<7.5){
-          const pay=16+o.toppings.length*2+Math.round(12*Math.max(0,o.pat)/o.max);
-          G.del++;earn(pay,'delivered to No. '+hs.num,hs.x,3,hs.z);kill(o);
+          const pay=16+o.toppings.length*2+(G.upg.premium?3:0)+Math.round(12*Math.max(0,o.pat)/o.max);
+          G.del++;gainShare(0.004);earn(pay,'delivered to No. '+hs.num,hs.x,3,hs.z);kill(o);
         }
       }
     }
@@ -1197,19 +1518,19 @@ function frame(now){
       const dx=c.tx-g.position.x,dz=c.tz-g.position.z,d=Math.hypot(dx,dz);
       if(d<0.12&&c.path.length){const n=c.path.shift();c.tx=n.x;c.tz=n.z;}
       else if(d<0.12){
-        if(c.state==='in'){c.state='wait';g.rotation.y=Math.PI;swing(c.ch,0,0,false);}
+        if(c.state==='in'){c.state='wait';if(!c.drive)g.rotation.y=Math.PI;swing(c.ch,0,0,false);}
         else{scene.remove(g);c.el.remove();customers.splice(i,1);continue;}
       }else{
-        const sp=c.state==='out'&&c.angry?4.4:3.4;
-        g.position.x+=dx/d*sp*dt;g.position.z+=dz/d*sp*dt;
+        const sp=c.speed||(c.state==='out'&&c.angry?4.4:3.4),stp=Math.min(d,sp*dt);
+        g.position.x+=dx/d*stp;g.position.z+=dz/d*stp;
         g.rotation.y=turn(g.rotation.y,Math.atan2(dx,dz),Math.min(1,dt*10));
         c.wt+=dt*9;swing(c.ch,c.wt,0.8,false);g.position.y=Math.abs(Math.sin(c.wt))*0.05;
       }
     }else if(c.state==='wait'){
       g.position.y=0;c.wait+=dt;
       if(G.playing){
-        c.pat-=dt*(1+0.15*messes.length);
-        if(c.pat<=0){G.late++;say('A customer left angry.','bad');pop('Too slow!',g.position.x,3.4,3.6,'bad');beep(150,.3,'sawtooth');kill(c.order);dismiss(c,true);continue;}
+        c.pat-=dt*(1+0.15*messes.length)*(G.upg.loyalty?0.85:1);
+        if(c.pat<=0){G.late++;say('A customer left angry.','bad');pop('Too slow!',g.position.x,3.4,g.position.z,'bad');beep(150,.3,'sawtooth');kill(c.order);dismiss(c,true);continue;}
       }
       c.wt+=dt*2;c.ch.armL.rotation.x=Math.sin(c.wt)*0.05;
       const key=c.order.stage+'|'+c.order.toppings.join();
@@ -1225,19 +1546,24 @@ function frame(now){
     n.tag.position.set(n.ch.group.position.x,3.5,n.ch.group.position.z);
     if(n.steps.length)continue;
     n.ph+=dt*2.5;n.ch.group.position.y=Math.abs(Math.sin(n.ph))*0.03;n.ch.legL.rotation.x=n.ch.legR.rotation.x=0;
-    if(k==='manager'||k==='cashier'){n.ch.armL.rotation.x=-1.0+Math.sin(n.ph*3.4)*0.12;n.ch.armR.rotation.x=-1.0+Math.sin(n.ph*3.4+1.7)*0.12;}
+    if(n.role==='manager'||n.role==='cashier'||n.role==='window'){n.ch.armL.rotation.x=-1.0+Math.sin(n.ph*3.4)*0.12;n.ch.armR.rotation.x=-1.0+Math.sin(n.ph*3.4+1.7)*0.12;}
     else{n.ch.armL.rotation.x=Math.sin(n.ph)*0.1;n.ch.armR.rotation.x=-Math.sin(n.ph)*0.1;}}
 
-  // oven bar
-  const ov=state.oven;
-  if(ov.pizza){
-    const s=screenOf(8.6,4.2,-4.2);ovenBar.hidden=false;
-    ovenBar.style.transform='translate('+s.x+'px,'+(s.y+8)+'px) translate(-50%,0)';
-    const bar=ovenBar.querySelector('i'),txt=ovenBar.querySelector('span');
-    if(ov.pizza.burnt){txt.textContent='Burnt';bar.style.width='100%';bar.style.background='#222';}
-    else if(ov.pizza.baked){txt.textContent=ov.t>BURN-4?'Take it out!':'Ready';bar.style.width=(100-(ov.t-BAKE)/(BURN-BAKE)*100)+'%';bar.style.background=ov.t>BURN-4?'#e5484d':'#00b06f';}
-    else{txt.textContent='Baking';bar.style.width=(ov.t/BAKE*100)+'%';bar.style.background='#ff8a2a';}
-  }else ovenBar.hidden=true;
+  // upstairs life
+  for(const d of DINERS){d.ph+=dt*2;d.ch.armL.rotation.x=-1.25+Math.sin(d.ph)*0.25;d.ch.armR.rotation.x=-1.25+Math.sin(d.ph+1.6)*0.25;}
+  if(discoBall){discoBall.rotation.y+=dt*1.5;if(G.party>0)discoBall.material.color.setHSL((clock*0.6)%1,0.9,0.6);else discoBall.material.color.setHex(0xe8eef5);}
+  // oven bars
+  OVENS.forEach((ov,i)=>{
+    const bx=OBARS[i];if(!bx)return;
+    if(ov.pizza){
+      const s=screenOf(ov.bx,ov.by,ov.bz);bx.hidden=false;
+      bx.style.transform='translate('+s.x+'px,'+(s.y+8)+'px) translate(-50%,0)';
+      const bar=bx.querySelector('i'),txt=bx.querySelector('span');
+      if(ov.pizza.burnt){txt.textContent='Burnt';bar.style.width='100%';bar.style.background='#222';}
+      else if(ov.pizza.baked){txt.textContent=ov.t>BURN-4?'Take it out!':'Ready';bar.style.width=(100-(ov.t-BAKE)/(BURN-BAKE)*100)+'%';bar.style.background=ov.t>BURN-4?'#e5484d':'#00b06f';}
+      else{txt.textContent='Baking';bar.style.width=(ov.t/BAKE*100)+'%';bar.style.background='#ff8a2a';}
+    }else bx.hidden=true;
+  });
 
   // delivery markers, nav
   const carried=orders.filter(o=>o.stage==='car');
@@ -1252,7 +1578,7 @@ function frame(now){
 
   // HUD refresh
   hudT-=dt;
-  if(hudT<=0){hudT=0.3;renderBoard();renderStock();renderPlayers();refreshStacks();$('hint').innerHTML=hintText();}
+  if(hudT<=0){hudT=0.3;renderBoard();renderStock();renderShare();renderPlayers();refreshStacks();$('hint').innerHTML=hintText();}
   const a=G.playing?currentAction():null,txt=a?a.label:'';
   if(txt!==lastPrompt){lastPrompt=txt;$('prompt').hidden=!txt;$('promptText').textContent=txt;}
   $('actBtn').style.opacity=a?1:.55;
@@ -1261,17 +1587,18 @@ function frame(now){
   const asp=camera.aspect,k=Math.min(1.9,Math.max(1,1.75/asp)),fx=asp<1.2?0.95:0.55;
   const zf=0.45+0.55*Math.max(0,Math.min(1,(pos.z-1)/6)),fxx=driving?1:(pos.z>9?1:fx);
   if(driving)camTgt.set(pos.x,Math.min(34,24*Math.max(1,k*0.8)),pos.z+8*Math.max(1,k*0.8));
-  else camTgt.set(pos.x*fxx,15*k,pos.z*zf+12.5*k+1);
+  else camTgt.set(pos.x*fxx,15*k+pos.y*0.8,pos.z*zf+12.5*k+1);
   const sm=1-Math.pow(driving?0.02:0.0008,dt);
   camera.position.lerp(camTgt,sm);
-  look.lerp(tmp.set(pos.x*fxx,0.4,pos.z*zf-0.5),sm);
+  look.lerp(tmp.set(pos.x*fxx,0.4+pos.y*0.9,pos.z*zf-0.5),sm);
   camera.lookAt(look);
   renderer.render(scene,camera);
 }
 
 function init(){
   buildWorld();buildStations();buildCar();buildCar(car2,0x2f7bf0);buildNPCs();buildPlayer();refreshOven();
-  renderBoard();renderPlayers();$('hint').innerHTML=hintText();
+  RIV.filter(r=>r.active).forEach(buildRival);
+  renderBoard();renderShare();renderPlayers();$('hint').innerHTML=hintText();
   camera.position.set(0,15,17);look.set(0,0.4,5);
   requestAnimationFrame(frame);
 }
