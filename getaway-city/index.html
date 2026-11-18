@@ -127,6 +127,10 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
 #chatbar{left:50%;bottom:112px;transform:translateX(-50%);width:min(440px,84vw);pointer-events:auto}
 #chatin{width:100%;box-sizing:border-box;background:rgba(9,10,22,.85);border:2px solid var(--sodium);border-radius:8px;padding:10px 12px;font:500 16px var(--body);color:var(--paper);user-select:text;-webkit-user-select:text}
 #chatin:focus{outline:none}
+#share{justify-content:center;background:rgba(5,6,14,.72)}
+#shareurl{width:100%;box-sizing:border-box;margin:8px 0 4px;background:var(--sign-d);border:2px solid rgba(243,240,228,.35);border-radius:8px;padding:9px 10px;font:500 13px var(--body);color:var(--paper);user-select:text;-webkit-user-select:text}
+.inv{margin-top:8px;width:100%;background:transparent;border:2px solid rgba(243,240,228,.45);border-radius:10px;padding:9px;font:600 16px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--paper)}
+.inv:hover{border-color:var(--paper)}
 #online{font:600 12px var(--display);letter-spacing:.14em;color:#7dff9a;text-shadow:0 1px 3px #000}
 #pname{width:100%;box-sizing:border-box;background:var(--sign-d);border:2px solid rgba(243,240,228,.35);border-radius:8px;padding:8px 10px;font:600 16px var(--display);letter-spacing:.08em;color:var(--paper);user-select:text;-webkit-user-select:text}
 #pname:focus{outline:3px solid var(--sodium);outline-offset:1px}
@@ -156,7 +160,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
     <div class="tr">
       <canvas id="mini"></canvas>
       <div id="online" hidden></div>
-      <div class="btns"><button id="bCam" type="button">CAM</button><button id="bSnd" type="button">SOUND</button><button id="bChat" type="button" hidden>CHAT</button><button id="bGarage" type="button">GARAGE</button><button id="bPause" type="button">PAUSE</button></div>
+      <div class="btns"><button id="bCam" type="button">CAM</button><button id="bSnd" type="button">SOUND</button><button id="bChat" type="button" hidden>CHAT</button><button id="bShare" type="button">SHARE</button><button id="bGarage" type="button">GARAGE</button><button id="bPause" type="button">PAUSE</button></div>
     </div>
     <div class="bl">
       <div id="vname"></div>
@@ -200,6 +204,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
         <button type="button" data-v="night" aria-pressed="false">Night</button>
       </div>
       <button class="go" id="go" type="button">Hit the streets</button>
+      <button class="inv" id="mShare" type="button">Invite friends to drive with you</button>
       <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to drive · <kbd>Space</kbd> handbrake · <kbd>Shift</kbd> nitro · <kbd>E</kbd> steal a nearby vehicle · <kbd>C</kbd> camera · <kbd>H</kbd> horn</p>
     </div>
   </div>
@@ -216,6 +221,14 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
       <div id="gdecalrow"><div class="lab">Decals</div><div class="sw" id="gdecal"></div></div>
       <p id="ginfo"></p>
       <div class="row"><button type="button" id="gbuy" class="pri">Buy</button><button type="button" id="gdone">Done</button></div></div>
+  </div>
+
+  <div id="share" class="screen" hidden>
+    <div class="card gcard"><h2>Invite friends</h2>
+      <p>Send this link. Everyone who opens it while signed in with access can see you and chat in the same city.</p>
+      <input id="shareurl" type="text" readonly value="https://claude.ai/artifact/FbEa2f9iyty31ArsLCygNb">
+      <p id="sharenote">They need access first: use <b>Share</b> in the claude.ai toolbar above this page to add them.</p>
+      <div class="row"><button type="button" id="shareCopy" class="pri">Copy link</button><button type="button" id="shareDone">Done</button></div></div>
   </div>
 
   <div id="over" class="screen" hidden>
@@ -1050,6 +1063,16 @@ function updateGarage(){
   const ps=SKIN_BY[gSel.paint],gs=GLOW_BY[gSel.glow],ds=DECAL_BY[gSel.decal];$('ginfo').textContent=ps.name+(gs.id!=='none'?' + '+gs.name:'')+(ds.id!=='none'?' + '+ds.name:'')+(t>0?' — $'+t:' — owned');
   const b=$('gbuy');b.textContent=t>0?'Buy $'+t:'Equipped';b.disabled=t===0||G.cash<t;
 }
+function openShare(){
+  if(G.state==='play'){G.state='paused';G.inShare=true;$('pause').hidden=true;}
+  $('share').hidden=false;$('shareCopy').textContent='Copy link';
+}
+function closeShare(){$('share').hidden=true;if(G.inShare){G.inShare=false;G.state='play';last=performance.now();}}
+function copyShare(){
+  const el=$('shareurl'),url=el.value,done=()=>{$('shareCopy').textContent='Copied';},fail=()=>{el.focus();el.select();$('shareCopy').textContent='Press Ctrl+C';};
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,fail);return;}}catch(e){}
+  fail();
+}
 function openGarage(){
   if(G.state!=='play')return;if(me.T.walk){toast('Get in a vehicle first','warn');return;}if(G.stars>0){toast('Lose the cops first','bad');return;}
   const e=G.eq[me.kind]||{};gBackup={paint:e.paint||'stock',glow:e.glow||'none',decal:e.decal||'none'};gSel={paint:gBackup.paint,glow:gBackup.glow,decal:gBackup.decal};
@@ -1672,6 +1695,7 @@ function setKind(kind){
   G.kind=kind;me=mk(kind,null,x,z,h,'parked');me.in.hb=true;applySkin(me);
 }
 function togglePause(forcePause){
+  if(!$('share').hidden){closeShare();return;}
   if(G.inGarage){closeGarage();return;}
   if(G.state==='play'){G.state='paused';$('pause').hidden=false;}
   else if(G.state==='paused'&&!forcePause){G.state='play';$('pause').hidden=true;last=performance.now();}
@@ -1956,6 +1980,8 @@ $('bGarage').addEventListener('click',()=>{if(G.state==='play')openGarage();});$
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false);}});
 $('chatin').addEventListener('keyup',e=>e.stopPropagation());$('chatin').addEventListener('blur',()=>closeChat(false));
 $('bChat').addEventListener('click',openChat);
+$('bShare').addEventListener('click',openShare);$('mShare').addEventListener('click',openShare);$('shareCopy').addEventListener('click',copyShare);$('shareDone').addEventListener('click',closeShare);
+$('shareurl').addEventListener('keydown',e=>e.stopPropagation());
 $('bCam').addEventListener('click',cycleCam);$('bSnd').addEventListener('click',toggleMute);$('bPause').addEventListener('click',()=>togglePause());
 
 loadGame();
