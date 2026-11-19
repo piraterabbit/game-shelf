@@ -127,10 +127,6 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
 #chatbar{left:50%;bottom:112px;transform:translateX(-50%);width:min(440px,84vw);pointer-events:auto}
 #chatin{width:100%;box-sizing:border-box;background:rgba(9,10,22,.85);border:2px solid var(--sodium);border-radius:8px;padding:10px 12px;font:500 16px var(--body);color:var(--paper);user-select:text;-webkit-user-select:text}
 #chatin:focus{outline:none}
-#share{justify-content:center;background:rgba(5,6,14,.72)}
-#shareurl{width:100%;box-sizing:border-box;margin:8px 0 4px;background:var(--sign-d);border:2px solid rgba(243,240,228,.35);border-radius:8px;padding:9px 10px;font:500 13px var(--body);color:var(--paper);user-select:text;-webkit-user-select:text}
-.inv{margin-top:8px;width:100%;background:transparent;border:2px solid rgba(243,240,228,.45);border-radius:10px;padding:9px;font:600 16px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--paper)}
-.inv:hover{border-color:var(--paper)}
 #online{font:600 12px var(--display);letter-spacing:.14em;color:#7dff9a;text-shadow:0 1px 3px #000}
 #pname{width:100%;box-sizing:border-box;background:var(--sign-d);border:2px solid rgba(243,240,228,.35);border-radius:8px;padding:8px 10px;font:600 16px var(--display);letter-spacing:.08em;color:var(--paper);user-select:text;-webkit-user-select:text}
 #pname:focus{outline:3px solid var(--sodium);outline-offset:1px}
@@ -160,7 +156,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
     <div class="tr">
       <canvas id="mini"></canvas>
       <div id="online" hidden></div>
-      <div class="btns"><button id="bCam" type="button">CAM</button><button id="bSnd" type="button">SOUND</button><button id="bChat" type="button" hidden>CHAT</button><button id="bShare" type="button">SHARE</button><button id="bGarage" type="button">GARAGE</button><button id="bPause" type="button">PAUSE</button></div>
+      <div class="btns"><button id="bCam" type="button">CAM</button><button id="bSnd" type="button">SOUND</button><button id="bChat" type="button" hidden>CHAT</button><button id="bGarage" type="button">GARAGE</button><button id="bPause" type="button">PAUSE</button></div>
     </div>
     <div class="bl">
       <div id="vname"></div>
@@ -199,12 +195,12 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
       </div>
       <div class="lab">Time of day</div>
       <div class="seg" id="segEnv">
+        <button type="button" data-v="sync" aria-pressed="true">Shared</button>
         <button type="button" data-v="day" aria-pressed="false">Day</button>
-        <button type="button" data-v="dusk" aria-pressed="true">Dusk</button>
+        <button type="button" data-v="dusk" aria-pressed="false">Dusk</button>
         <button type="button" data-v="night" aria-pressed="false">Night</button>
       </div>
       <button class="go" id="go" type="button">Hit the streets</button>
-      <button class="inv" id="mShare" type="button">Invite friends to drive with you</button>
       <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to drive · <kbd>Space</kbd> handbrake · <kbd>Shift</kbd> nitro · <kbd>E</kbd> steal a nearby vehicle · <kbd>C</kbd> camera · <kbd>H</kbd> horn</p>
     </div>
   </div>
@@ -221,14 +217,6 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
       <div id="gdecalrow"><div class="lab">Decals</div><div class="sw" id="gdecal"></div></div>
       <p id="ginfo"></p>
       <div class="row"><button type="button" id="gbuy" class="pri">Buy</button><button type="button" id="gdone">Done</button></div></div>
-  </div>
-
-  <div id="share" class="screen" hidden>
-    <div class="card gcard"><h2>Invite friends</h2>
-      <p>Send this link. Everyone who opens it while signed in with access can see you and chat in the same city.</p>
-      <input id="shareurl" type="text" readonly value="https://claude.ai/artifact/FbEa2f9iyty31ArsLCygNb">
-      <p id="sharenote">They need access first: use <b>Share</b> in the claude.ai toolbar above this page to add them.</p>
-      <div class="row"><button type="button" id="shareCopy" class="pri">Copy link</button><button type="button" id="shareDone">Done</button></div></div>
   </div>
 
   <div id="over" class="screen" hidden>
@@ -1063,16 +1051,6 @@ function updateGarage(){
   const ps=SKIN_BY[gSel.paint],gs=GLOW_BY[gSel.glow],ds=DECAL_BY[gSel.decal];$('ginfo').textContent=ps.name+(gs.id!=='none'?' + '+gs.name:'')+(ds.id!=='none'?' + '+ds.name:'')+(t>0?' — $'+t:' — owned');
   const b=$('gbuy');b.textContent=t>0?'Buy $'+t:'Equipped';b.disabled=t===0||G.cash<t;
 }
-function openShare(){
-  if(G.state==='play'){G.state='paused';G.inShare=true;$('pause').hidden=true;}
-  $('share').hidden=false;$('shareCopy').textContent='Copy link';
-}
-function closeShare(){$('share').hidden=true;if(G.inShare){G.inShare=false;G.state='play';last=performance.now();}}
-function copyShare(){
-  const el=$('shareurl'),url=el.value,done=()=>{$('shareCopy').textContent='Copied';},fail=()=>{el.focus();el.select();$('shareCopy').textContent='Press Ctrl+C';};
-  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,fail);return;}}catch(e){}
-  fail();
-}
 function openGarage(){
   if(G.state!=='play')return;if(me.T.walk){toast('Get in a vehicle first','warn');return;}if(G.stars>0){toast('Lose the cops first','bad');return;}
   const e=G.eq[me.kind]||{};gBackup={paint:e.paint||'stock',glow:e.glow||'none',decal:e.decal||'none'};gSel={paint:gBackup.paint,glow:gBackup.glow,decal:gBackup.decal};
@@ -1239,7 +1217,7 @@ function partUpdate(s,dt,g){for(let i=0;i<s.n;i++){if(s.life[i]<=0)continue;s.li
   s.geo.attributes.position.needsUpdate=true;s.geo.attributes.color.needsUpdate=true;}
 
 /* ---------------- game state ---------------- */
-const G={eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
+const G={envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
   env:'dusk',cam:0,shake:0,muted:false,spawnT:0,trafT:0,sprayCool:0,spray:null,crimeT:0,speedT:0,headI:1,starsPrev:0,heli:null,heliAway:0,flash:false,camH:0,prompt:null,
   copsNear(d){for(const c of vehicles)if(c.role==='cop'&&!c.dead&&hyp(c.x-me.x,c.z-me.z)<d)return true;return false;}};
 const shops=[],coins=[],ramps=[],peds=[];
@@ -1656,7 +1634,8 @@ function trySwap(){
   sfxCoin();
 }
 function cycleCam(){G.cam=(G.cam+1)%3;}
-function cycleEnv(){const o=['dusk','night','day'];applyEnv(o[(o.indexOf(G.env)+1)%3]);}
+function cycleEnv(){const o=['dusk','night','day'],n=o[(o.indexOf(G.env)+1)%3];G.envMode=n;applyEnv(n);}
+function syncEnv(force){if(G.envMode!=='sync')return;const n=['day','dusk','night','night'][Math.floor(Date.now()/180000)%4];if(force||n!==G.env)applyEnv(n);}
 function resetCar(){
   const rp=nearestRoadPoint(me.x,me.z);me.x=rp.x;me.z=rp.z;me.h=rp.h;me.vx=me.vz=0;me.yaw=0;me.y=0;me.air=false;G.camH=me.h;toast('Back on the road','');
 }
@@ -1695,7 +1674,6 @@ function setKind(kind){
   G.kind=kind;me=mk(kind,null,x,z,h,'parked');me.in.hb=true;applySkin(me);
 }
 function togglePause(forcePause){
-  if(!$('share').hidden){closeShare();return;}
   if(G.inGarage){closeGarage();return;}
   if(G.state==='play'){G.state='paused';$('pause').hidden=false;}
   else if(G.state==='paused'&&!forcePause){G.state='play';$('pause').hidden=true;last=performance.now();}
@@ -1743,6 +1721,7 @@ function worldUpdate(dt){
   }else{G.prompt=null;if(marker)marker.visible=false;}
   G.strT=(G.strT||0)-dt;if(G.strT<=0){G.strT=.15;streamWorld(2);}
   G.saveT=(G.saveT||0)-dt;if(G.saveT<=0){G.saveT=5;saveGame();}
+  G.envT=(G.envT||0)-dt;if(G.envT<=0){G.envT=3;syncEnv(false);}
   G.sigT=(G.sigT||0)-dt;if(G.sigT<=0){G.sigT=.12;updateSignals();}
   if(G.state==='play')checkRedLight();
   manageSpawns(dt);
@@ -1931,7 +1910,8 @@ function netSync(dt){
     for(const id of Array.from(NET.remotes.keys()))if(!seen.has(id))killRemote(id);
     for(const id of Array.from(NET.cn.keys()))if(!cs.has(id))NET.cn.delete(id);
     if(cnt!==NET.count){NET.count=cnt;}
-    const el=$('online');el.hidden=false;el.textContent='ONLINE · '+cnt+(cnt===1?' DRIVER':' DRIVERS');
+    const el=$('online');el.hidden=false;let up=true;try{up=room.connected();}catch(e){}
+    el.textContent=up?'ONLINE · '+cnt+(cnt===1?' DRIVER':' DRIVERS'):'RECONNECTING…';syncEnv(false);
   }
   NET.sendT-=dt;
   if(NET.sendT<=0){NET.sendT=.09;
@@ -1971,7 +1951,7 @@ const CARDS=[['sports','Sports Car','Fastest on the straights. One bad wall and 
   b.innerHTML='<b>'+c[1]+'</b><div class="st"><em style="font-style:normal">SPD</em>'+pips(c[3][0])+'<em style="font-style:normal">HND</em>'+pips(c[3][1])+'<em style="font-style:normal">TGH</em>'+pips(c[3][2])+'</div><span>'+c[2]+'</span>';
   b.addEventListener('click',()=>{box.querySelectorAll('.car').forEach(x=>x.setAttribute('aria-pressed',x===b));setKind(c[0]);});box.appendChild(b);});}
 function seg(id,fn){const s=$(id);s.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{s.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);}));}
-seg('segCops',v=>{G.copMode=v;});seg('segEnv',v=>applyEnv(v));
+seg('segCops',v=>{G.copMode=v;});seg('segEnv',v=>{G.envMode=v;if(v==='sync')syncEnv(true);else applyEnv(v);});
 $('go').addEventListener('click',startGame);
 $('resume').addEventListener('click',()=>togglePause());
 $('again').addEventListener('click',()=>{respawnPlayer();G.state='play';$('over').hidden=true;$('hud').hidden=false;$('touch').hidden=!isTouch;G.play=0;G.copsDown=0;G.escapes=0;G.maxStars=0;G.bounty=0;G.hits=0;G.bestJump=0;});
@@ -1980,8 +1960,6 @@ $('bGarage').addEventListener('click',()=>{if(G.state==='play')openGarage();});$
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false);}});
 $('chatin').addEventListener('keyup',e=>e.stopPropagation());$('chatin').addEventListener('blur',()=>closeChat(false));
 $('bChat').addEventListener('click',openChat);
-$('bShare').addEventListener('click',openShare);$('mShare').addEventListener('click',openShare);$('shareCopy').addEventListener('click',copyShare);$('shareDone').addEventListener('click',closeShare);
-$('shareurl').addEventListener('keydown',e=>e.stopPropagation());
 $('bCam').addEventListener('click',cycleCam);$('bSnd').addEventListener('click',toggleMute);$('bPause').addEventListener('click',()=>togglePause());
 
 loadGame();
@@ -1995,7 +1973,7 @@ buildCoins();
 for(let i=0;i<20;i++)spawnTraffic(false);
 for(let i=0;i<3;i++)spawnPatrol();
 for(let i=0;i<24;i++)spawnPed(false);
-applyEnv('dusk');resize();
+G.envMode='sync';syncEnv(true);resize();
 window.__GC={applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
 requestAnimationFrame(frame);
 })();
