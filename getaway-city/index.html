@@ -40,6 +40,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
 .tr{top:12px;right:var(--gr);display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 #mini{width:168px;height:168px;border-radius:50%;border:3px solid rgba(243,240,228,.85);background:#111;box-shadow:0 4px 18px rgba(0,0,0,.55)}
 .btns{display:flex;gap:6px;pointer-events:auto}
+.btns button.on{background:rgba(255,178,30,.35);border-color:var(--sodium)}
 .btns button{background:var(--panel);border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:6px 9px;font:600 12px/1 var(--display);letter-spacing:.12em}
 .bl{left:var(--gx);bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;width:min(250px,44vw)}
 #vname{font:700 20px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;text-shadow:0 2px 6px #000}
@@ -161,12 +162,12 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
     <div class="tr">
       <canvas id="mini"></canvas>
       <div id="online" hidden></div>
-      <div class="btns"><button id="bCam" type="button">CAM</button><button id="bSnd" type="button">SOUND</button><button id="bChat" type="button" hidden>CHAT</button><button id="bGarage" type="button">GARAGE</button><button id="bPause" type="button">PAUSE</button></div>
+      <div class="btns"><button id="bCam" type="button">CAM</button><button id="bSnd" type="button">SOUND</button><button id="bChat" type="button" hidden>CHAT</button><button id="bMouse" type="button">MOUSE</button><button id="bGarage" type="button">GARAGE</button><button id="bPause" type="button">PAUSE</button></div>
     </div>
     <div class="bl">
       <div id="vname"></div>
       <div class="hp"><b id="hpbar"></b></div>
-      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
+      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat &nbsp; <kbd>Click</kbd> capture mouse: move to steer, left gas, right brake<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
     </div>
     <div class="br"><div id="spd">0</div><small>KM/H</small><div class="nos" id="nos"><b id="nosbar"></b></div><small>NITRO</small></div>
     <div id="chat"></div>
@@ -1075,7 +1076,7 @@ function updateGarage(){
   const b=$('gbuy');b.textContent=t>0?'Buy $'+t:'Equipped';b.disabled=t===0||G.cash<t;
 }
 function openGarage(){
-  if(G.transport)return;
+  if(G.transport)return;releaseMouse();
   if(G.state!=='play')return;if(me.T.walk){toast('Get in a vehicle first','warn');return;}if(G.stars>0){toast('Lose the cops first','bad');return;}
   const e=G.eq[me.kind]||{};gBackup={paint:e.paint||'stock',glow:e.glow||'none',decal:e.decal||'none'};gSel={paint:gBackup.paint,glow:gBackup.glow,decal:gBackup.decal};
   G.state='paused';G.inGarage=true;$('pause').hidden=true;$('garage').hidden=false;buildSwatches();updateGarage();
@@ -1519,10 +1520,13 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(G.state==='play')togglePause(true);});
+const mouse={steer:0,l:false,r:false,locked:false};
+function lockMouse(){const el=$('gl');if(!el||!el.requestPointerLock)return;try{const p=el.requestPointerLock();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+function releaseMouse(){if(document.pointerLockElement){G.quiet=true;try{document.exitPointerLock();}catch(e){}}}
 function readInput(dt){
   const L=keys.KeyA||keys.ArrowLeft||touch.l,Rr=keys.KeyD||keys.ArrowRight||touch.r;
-  inp.thr=(keys.KeyW||keys.ArrowUp||touch.g)?1:0;inp.brk=(keys.KeyS||keys.ArrowDown||touch.b)?1:0;inp.hb=!!(keys.Space||touch.h);inp.horn=!!keys.KeyH;inp.nitro=!!(keys.ShiftLeft||keys.ShiftRight||touch.n);
-  const t=(Rr?1:0)-(L?1:0);const k=t===0?10:(Math.sign(t)!==Math.sign(inp.steer)&&inp.steer!==0?14:7);
+  inp.thr=(keys.KeyW||keys.ArrowUp||touch.g||mouse.l)?1:0;inp.brk=(keys.KeyS||keys.ArrowDown||touch.b||mouse.r)?1:0;inp.hb=!!(keys.Space||touch.h);inp.horn=!!keys.KeyH;inp.nitro=!!(keys.ShiftLeft||keys.ShiftRight||touch.n);
+  mouse.steer*=Math.exp(-dt*2.2);const t=clamp((Rr?1:0)-(L?1:0)+(mouse.locked?mouse.steer:0),-1,1);const k=t===0?10:(Math.sign(t)!==Math.sign(inp.steer)&&inp.steer!==0?14:7);
   inp.steer+=(t-inp.steer)*Math.min(1,dt*k);if(Math.abs(inp.steer)<.01&&t===0)inp.steer=0;
 }
 function bindTouch(id,key){const b=$(id);const on=e=>{e.preventDefault();touch[key]=true;b.classList.add('on');};const off=e=>{e.preventDefault();touch[key]=false;b.classList.remove('on');};
@@ -1678,6 +1682,7 @@ function escape(){
   toast('Escaped! +$'+earned,'good');for(const c of vehicles)if(c.role==='cop'&&c.chase){c.chase=false;c.ai=null;}removeHeli();
 }
 function busted(){
+  releaseMouse();
   G.state='busted';const lost=Math.round(G.cash*.25);G.cash-=lost;
   $('overstats').innerHTML=['Time on the run',fmt(G.play),'Most wanted',G.maxStars+' ★','Police cars wrecked',G.copsDown,'Escapes',G.escapes,'Pedestrians bumped',G.hits,'Best jump',Math.round(G.bestJump)+' m','Bounty lost','$'+Math.round(G.bounty),'Fine','$'+lost].map(x=>'<span>'+x+'</span>').join('');
   $('over').hidden=false;$('hud').hidden=true;$('touch').hidden=true;
@@ -1704,7 +1709,7 @@ function setKind(kind){
 function togglePause(forcePause){
   if(G.inShop){closeShop();return;}
   if(G.inGarage){closeGarage();return;}
-  if(G.state==='play'){G.state='paused';$('pause').hidden=false;}
+  if(G.state==='play'){G.state='paused';$('pause').hidden=false;releaseMouse();}
   else if(G.state==='paused'&&!forcePause){G.state='play';$('pause').hidden=true;last=performance.now();}
 }
 
@@ -1982,7 +1987,7 @@ function renderShop(){
     const pr=document.createElement('em');pr.textContent='$'+it.p;b.appendChild(l);b.appendChild(pr);
     b.addEventListener('click',()=>{if(G.cash<it.p)return;if(it.f()===false)return;G.cash-=it.p;sfxCoin();saveGame();renderShop();});box.appendChild(b);});
 }
-function openShop(){if(G.state!=='play')return;G.state='paused';G.inShop=true;$('pause').hidden=true;$('shopmenu').hidden=false;renderShop();}
+function openShop(){if(G.state!=='play')return;releaseMouse();G.state='paused';G.inShop=true;$('pause').hidden=true;$('shopmenu').hidden=false;renderShop();}
 function closeShop(){if(!G.inShop)return;G.inShop=false;$('shopmenu').hidden=true;G.state='play';last=performance.now();}
 
 /* ---------------- police station and the jailbreak ---------------- */
@@ -2125,7 +2130,7 @@ function netChat(p,d){
   if(prev===undefined){NET.cn.set(p.peer,cur);return;}
   if(cur!==prev){NET.cn.set(p.peer,cur);const txt=cleanMsg(d.cm);if(txt)addChat(cleanName(d.n)||'Driver',txt,p.peer);}
 }
-function openChat(){if(!NET.room||NET.chatOpen||G.state!=='play')return;NET.chatOpen=true;for(const k in keys)keys[k]=false;touch.l=touch.r=touch.g=touch.b=touch.h=touch.n=false;$('chatbar').hidden=false;$('chatin').value='';$('chatin').focus();}
+function openChat(){if(!NET.room||NET.chatOpen||G.state!=='play')return;releaseMouse();NET.chatOpen=true;for(const k in keys)keys[k]=false;touch.l=touch.r=touch.g=touch.b=touch.h=touch.n=false;$('chatbar').hidden=false;$('chatin').value='';$('chatin').focus();}
 function closeChat(send){
   if(!NET.chatOpen)return;const inp2=$('chatin'),txt=cleanMsg(inp2.value);NET.chatOpen=false;$('chatbar').hidden=true;inp2.blur();
   if(send&&txt&&NET.room){const now=performance.now();if(now-NET.chatT<900){toast('Slow down','warn');return;}NET.chatT=now;
@@ -2218,6 +2223,14 @@ $('bGarage').addEventListener('click',()=>{if(G.state==='play')openGarage();});$
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false);}});
 $('chatin').addEventListener('keyup',e=>e.stopPropagation());$('chatin').addEventListener('blur',()=>closeChat(false));
 $('bChat').addEventListener('click',openChat);
+$('bMouse').hidden=isTouch;
+$('bMouse').addEventListener('click',()=>{if(document.pointerLockElement)releaseMouse();else if(G.state==='play')lockMouse();});
+document.addEventListener('pointerlockchange',()=>{mouse.locked=document.pointerLockElement===$('gl');mouse.l=mouse.r=false;mouse.steer=0;$('bMouse').classList.toggle('on',mouse.locked);
+  if(mouse.locked)toast('Mouse captured — Esc to release','');else if(G.state==='play'&&!G.quiet)togglePause(true);G.quiet=false;});
+document.addEventListener('mousemove',e=>{if(mouse.locked)mouse.steer=clamp(mouse.steer+e.movementX*.0075,-1,1);});
+$('gl').addEventListener('mousedown',e=>{if(!mouse.locked){if(G.state==='play'&&!isTouch)lockMouse();return;}if(e.button===0)mouse.l=true;else if(e.button===2)mouse.r=true;e.preventDefault();});
+addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;else if(e.button===2)mouse.r=false;});
+$('gl').addEventListener('contextmenu',e=>e.preventDefault());
 $('shopdone').addEventListener('click',closeShop);
 $('bCam').addEventListener('click',cycleCam);$('bSnd').addEventListener('click',toggleMute);$('bPause').addEventListener('click',()=>togglePause());
 
@@ -2233,7 +2246,7 @@ for(let i=0;i<20;i++)spawnTraffic(false);
 for(let i=0;i<3;i++)spawnPatrol();
 for(let i=0;i<24;i++)spawnPed(false);
 G.envMode='sync';syncEnv(true);resize();
-window.__GC={startJail,STATION,DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
+window.__GC={mouse,startJail,STATION,DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
 requestAnimationFrame(frame);
 })();
 </script>
