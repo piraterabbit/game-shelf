@@ -231,9 +231,9 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
   </div>
 
   <div id="over" class="screen" hidden>
-    <div class="card"><h2>Busted</h2><p id="overmsg">Pulled over and cuffed.</p>
+    <div class="card"><h2>Busted</h2><p id="overmsg">Pulled over and cuffed. They’re taking you to the police station.</p>
       <div class="stats" id="overstats"></div>
-      <div class="row"><button type="button" id="again" class="pri">Back out there</button><button type="button" id="tomenu">Change ride</button></div></div>
+      <div class="row"><button type="button" id="again" class="pri">Into the cell</button><button type="button" id="tomenu">Change ride</button></div></div>
   </div>
 </div>
 
@@ -640,7 +640,7 @@ function rngFor(i,j){let s=(Math.imul(i|0,73856093)^Math.imul(j|0,19349663)^0x9e
 function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy),a=h2(xi,yi,1),b=h2(xi+1,yi,1),c=h2(xi,yi+1,1),d=h2(xi+1,yi+1,1);return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy;}
 function lightState(i,j,axis){const t=(Date.now()/1000+h2(i,j,31)*22)%22;if(axis==='x')return t<9?'g':t<11?'y':'r';return t>=11&&t<20?'g':(t>=20?'y':'r');}
 const G_SPOLE=new T.CylinderGeometry(.09,.11,4.6,6).translate(0,2.3,0),G_SHEAD=new T.BoxGeometry(.55,1.5,.55),G_LX=new T.BoxGeometry(.06,.3,.3),G_LZ=new T.BoxGeometry(.3,.3,.06),headDark=new T.MeshLambertMaterial({color:0x15161c});
-const blockType=(i,j)=>(i===0&&j===0)?'plaza':(h2(i,j,3)<.11?'park':'bld');
+const blockType=(i,j)=>(i===0&&j===0)?'plaza':(i===1&&j===0)?'station':(h2(i,j,3)<.11?'park':'bld');
 const PLAZA={cx:HALF+BLOCK/2,cz:HALF+BLOCK/2};
 const HELIPADS=[],spawnedBlocks=new Set(),chunks=new Map();
 const winMats2=winMats;
@@ -753,6 +753,17 @@ function genBlock(i,j){
     for(const rr of[13,20]){const m=new T.Mesh(new T.RingGeometry(rr-.4,rr+.4,24),ringMat);m.rotation.x=-Math.PI/2;m.position.set(cx,.05,cz);ch.add(m);}
     addPad(ch,cx-16,cz+17,fresh,Math.PI/2);addPad(ch,cx+16,cz+17,fresh,0);
     addRamp(cx-24,cz-10,1,0,16,7,4.2,ch);addRamp(cx+24,cz-10,-1,0,16,7,4.2,ch);
+  }else if(type==='station'){
+    const w=44,d=36,h=12,bm=Mi(0xe4ebf5);
+    const body=new T.Mesh(G_BOX,bm);body.scale.set(w,h,d);body.position.set(cx,h/2,cz);ch.add(body);
+    const band=new T.Mesh(G_BOX,Mi(0x2a5cff));band.scale.set(w+.3,1.6,d+.3);band.position.set(cx,8.5,cz);ch.add(band);
+    const roof=new T.Mesh(G_BOX,Mi(0x15161c));roof.scale.set(w+.5,.7,d+.5);roof.position.set(cx,h+.35,cz);ch.add(roof);
+    const door=new T.Mesh(G_BOX,doorMat);door.scale.set(.15,2.8,2.6);door.position.set(cx-w/2-.05,1.4,cz);ch.add(door);
+    const frame=new T.Mesh(G_BOX,doorFrame);frame.scale.set(.1,3.1,3.0);frame.position.set(cx-w/2-.03,1.55,cz);ch.add(frame);
+    const sgn=label('POLICE','#9cc2ff');sgn.scale.set(14,3.5,1);sgn.position.set(cx-w/2-1,6.4,cz);ch.add(sgn);
+    for(const[lx,lz,lc]of[[-w/2+3,-d/2+3,0xff2a2a],[-w/2+3,d/2-3,0x2a5cff],[w/2-3,-d/2+3,0x2a5cff],[w/2-3,d/2-3,0xff2a2a]]){const lm=new T.Mesh(G_BOX,Mb(lc));lm.scale.set(1.4,.8,1.4);lm.position.set(cx+lx,h+1,cz+lz);ch.add(lm);}
+    const c={x0:cx-w/2,x1:cx+w/2,z0:cz-d/2,z1:cz+d/2,h};addCol(c,ch.cols);ch.rects.push(c);
+    if(fresh)for(const dz of[-13,-7,7,13])mk('cop',null,cx-w/2-3.4,cz+dz,Math.PI/2,'parked');
   }else if(type==='park'){
     flat(BLOCK-4,BLOCK-4,grassMat,.03);
     for(let k=0;k<17;k++){const x=x0+5+rnd()*(BLOCK-10),z=z0+5+rnd()*(BLOCK-10),s=.85+rnd()*.65;if(hyp(x-cx,z-cz)<10){rnd();continue;}
@@ -1229,7 +1240,7 @@ function partUpdate(s,dt,g){for(let i=0;i<s.n;i++){if(s.life[i]<=0)continue;s.li
   s.geo.attributes.position.needsUpdate=true;s.geo.attributes.color.needsUpdate=true;}
 
 /* ---------------- game state ---------------- */
-const G={disguiseT:0,interior:null,inShop:false,promptTxt:null,envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
+const G={pickLabel:null,jail:null,disguiseT:0,interior:null,inShop:false,promptTxt:null,envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
   env:'dusk',cam:0,shake:0,muted:false,spawnT:0,trafT:0,sprayCool:0,spray:null,crimeT:0,speedT:0,headI:1,starsPrev:0,heli:null,heliAway:0,flash:false,camH:0,prompt:null,
   copsNear(d){for(const c of vehicles)if(c.role==='cop'&&!c.dead&&hyp(c.x-me.x,c.z-me.z)<d)return true;return false;}};
 const shops=[],coins=[],ramps=[],peds=[];
@@ -1598,7 +1609,7 @@ function hudUpdate(){
   const bust=$('bust');bust.hidden=G.bust<=.05;if(!bust.hidden)bust.querySelector('b').style.width=Math.min(100,G.bust/2.2*100)+'%';
   $('vig').style.opacity=G.bust>.05?String(clamp(G.bust/2.2,0,1)):(hpf<.25?.5:0);
   // swap prompt
-  {const pk=$('pick');pk.hidden=!G.pick;if(G.pick)pk.querySelector('b').style.width=Math.min(100,G.pick.t/3*100)+'%';}
+  {const pk=$('pick');pk.hidden=!G.pick;if(G.pick){pk.querySelector('b').style.width=Math.min(100,G.pick.t/3*100)+'%';pk.firstChild.nodeValue=G.pickLabel||'BREAKING IN';}}
   const pr=$('prompt');if(G.promptTxt){pr.hidden=false;pr.querySelector('span').textContent=G.promptTxt;}else if(G.prompt){pr.hidden=false;pr.querySelector('span').textContent=(G.prompt.T.cop?'Hold to break into the ':'Take the ')+G.prompt.T.name;}else pr.hidden=true;
 }
 
@@ -1907,7 +1918,7 @@ function buildInterior(kind){
   const sg=label(K?'FASHION':'OPEN 24H',K?'#ff9ad5':'#ffd78a');sg.scale.set(7,1.8,1);sg.position.set(cx,3.0,cz+7.8);g.add(sg);
   return{cx,cz,spawn:{x:cx,z:cz-5.4},counter:{x:cx,z:cz+2.8},exit:{x:cx,z:cz-7},keeper,kind};
 }
-function ensureInterior(kind){return INTS[kind]||(INTS[kind]=buildInterior(kind));}
+function ensureInterior(kind){return INTS[kind]||(INTS[kind]=kind==='station'?buildStation():buildInterior(kind));}
 function nearestDoor(){
   if(G.interior||G.spray)return null;if(me.T.fly&&me.y>2)return null;
   const range=me.T.walk?3.4:(Math.hypot(me.vx,me.vz)<9?6.5:0);if(!range)return null;
@@ -1940,12 +1951,14 @@ function interiorUpdate(dt){
   const n=Math.max(1,Math.ceil(dt/.02)),h=dt/n;for(let s=0;s<n;s++){stepFoot(me,h);collideWorld(me,h);updCircles(me);}
   syncMesh(me,dt);
   if(G.heat>0){G.heat=Math.max(0,G.heat-dt*4.5);starsFromHeat();}
-  const dc=hyp(me.x-I.counter.x,me.z-I.counter.z);
-  if(dc<2.8)G.promptTxt='Talk to the shopkeeper';else if(me.z<I.cz-6.1&&Math.abs(me.x-I.cx)<2.6)G.promptTxt='Leave the shop';else G.promptTxt=null;
+  if(G.interior.jail)jailUpdate(dt);
+  else{const dc=hyp(me.x-I.counter.x,me.z-I.counter.z);
+  if(dc<2.8)G.promptTxt='Talk to the shopkeeper';else if(me.z<I.cz-6.1&&Math.abs(me.x-I.cx)<2.6)G.promptTxt='Leave the shop';else G.promptTxt=null;}
   G.prompt=null;if(marker)marker.visible=false;
   partUpdate(SPK,dt,14);partUpdate(SMK,dt,-1.2);
 }
 function interiorAct(){
+  if(G.interior.jail){jailAct();return;}
   const I=G.interior.I;
   if(hyp(me.x-I.counter.x,me.z-I.counter.z)<2.8)openShop();
   else if(me.z<I.cz-6.1&&Math.abs(me.x-I.cx)<2.6)leaveShop();
@@ -1967,6 +1980,100 @@ function renderShop(){
 }
 function openShop(){if(G.state!=='play')return;G.state='paused';G.inShop=true;$('pause').hidden=true;$('shopmenu').hidden=false;renderShop();}
 function closeShop(){if(!G.inShop)return;G.inShop=false;$('shopmenu').hidden=true;G.state='play';last=performance.now();}
+
+/* ---------------- police station and the jailbreak ---------------- */
+const STATION={x:82.8,z:35,nx:-1,nz:0,name:'Police Station'};
+function buildStation(){
+  const cx=30000+120,cz=30000,g=new T.Group();g.cen=[cx,2,cz];g.bsr=30;scene.add(g);
+  const box=(w,h,d,x,y,z,mat,col)=>{const m=new T.Mesh(G_BOX,mat);m.scale.set(w,h,d);m.position.set(cx+x,y,cz+z);g.add(m);
+    let c=null;if(col){c={x0:cx+x-w/2,x1:cx+x+w/2,z0:cz+z-d/2,z1:cz+z+d/2};addCol(c,null);}m.userData={c};return m;};
+  const vd=new T.Mesh(new T.PlaneGeometry(140,140),Mb(0x0d0e14));vd.rotation.x=-Math.PI/2;vd.position.set(cx,-.02,cz);g.add(vd);
+  const fl=new T.Mesh(new T.PlaneGeometry(14,16),new T.MeshBasicMaterial({map:checkerTex('#aab4c4','#8e99ac')}));fl.geometry.attributes.uv.array.set([0,0,7,0,7,8,0,8]);fl.rotation.x=-Math.PI/2;fl.position.set(cx,.02,cz);g.add(fl);
+  const wm=Mi(0xc6d3e8);
+  box(.4,3.6,16.8,-7.2,1.8,0,wm,1);box(.4,3.6,16.8,7.2,1.8,0,wm,1);box(14.8,3.6,.4,0,1.8,8.2,wm,1);box(14.8,1.1,.4,0,.55,-8.2,Mi(0x2f4f9f),1);
+  box(3,.04,1.6,0,.05,-7.2,Mb(0xffe9b0));
+  const ex=label('EXIT','#9dffb4');ex.scale.set(4,1,1);ex.position.set(cx,1.9,cz-7.7);g.add(ex);
+  const sg=label('POLICE','#9cc2ff');sg.scale.set(7,1.8,1);sg.position.set(cx,3.0,cz+7.8);g.add(sg);
+  // holding cell: bars along x=-3.2, solid wall at z=3
+  box(3.9,2.6,.3,-5.1,1.3,3,Mi(0x8a99b8),1);box(2.4,.5,1,-5.8,.3,7.2,Mi(0x6b7a99));
+  const bars=[];for(let z=3.15;z<8;z+=.35){const gate=z>5.0&&z<6.6;const b=box(.07,2.6,.07,-3.2,1.3,z,gate?Mi(0xd9a441):Mi(0x30343f));if(gate)bars.push(b);}
+  addCol({x0:cx-3.35,x1:cx-3.05,z0:cz+3,z1:cz+5.0},null);addCol({x0:cx-3.35,x1:cx-3.05,z0:cz+6.6,z1:cz+8},null);
+  const gateC={x0:cx-3.35,x1:cx-3.05,z0:cz+5.0,z1:cz+6.6,live:true};addCol(gateC,null);
+  // furniture and cover
+  box(2.4,1,1,-4.5,.5,-.2,Mi(0x7a6a58),1);box(3,1.8,.6,-1.5,.9,-4,Mi(0x8a8f99),1);box(1.4,1.8,.8,6,.9,4.5,Mi(0x8a8f99),1);box(2.5,.6,.6,2.5,.3,-5.5,Mi(0x7a6a58),1);
+  box(2.4,1,1.2,4.6,.5,-.5,Mi(0x7a6a58),1);
+  const card=box(.34,.06,.22,4.6,1.1,-.5,Mb(0x4cff8a));const kl=label('KEYCARD','#9dffb4');kl.scale.set(3,.8,1);kl.position.set(cx+4.6,2.1,cz-.5);g.add(kl);
+  const mkCone=()=>new T.MeshBasicMaterial({color:0xff3b3b,transparent:true,opacity:.22,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false});
+  const coneShape=new T.Shape();coneShape.moveTo(0,0);coneShape.lineTo(7,-4.5);coneShape.lineTo(7,4.5);
+  const guards=[[[0,3],[0,-1.2]],[[-2,2.4],[5,2.4]]].map((path,k)=>{
+    const npc=makeNpc(0x1d2b64,pick([0xf1c27d,0xc68642,0x8d5524]),0x14181f);part(npc,UB,Mt(0x101319),.4,.12,.4,0,1.82,0);g.add(npc);
+    const cg=new T.ExtrudeGeometry(coneShape,{depth:.02,bevelEnabled:false});cg.rotateX(-Math.PI/2);
+    const cone=new T.Mesh(cg,mkCone());g.add(cone);
+    return{g:npc,cone,path:path.map(p=>[cx+p[0],cz+p[1]]),i:0,x:cx+path[0][0],z:cz+path[0][1],h:0,pause:1,pauseTot:1,baseH:0,k};});
+  return{cx,cz,kind:'station',spawn:{x:cx-5.4,z:cz+6},gate:{x:cx-3.4,z:cz+5.8},gateC,gateBars:bars,desk:{x:cx+4.6,z:cz-.5},card,exit:{x:cx,z:cz-7},guards};
+}
+function resetJail(){
+  const I=G.interior.I,J=G.jail;J.key=false;J.gateOpen=false;J.hold=null;J.spot=0;
+  if(!I.gateC.live){addCol(I.gateC,null);I.gateC.live=true;}
+  I.gateBars.forEach(b=>b.visible=true);I.card.visible=true;
+  I.guards.forEach(gd=>{gd.i=0;gd.x=gd.path[0][0];gd.z=gd.path[0][1];gd.pause=1;gd.pauseTot=1;gd.baseH=0;gd.h=0;});
+  me.x=I.spawn.x;me.z=I.spawn.z;me.h=0;me.vx=me.vz=0;me.y=0;G.camH=0;G.pick=null;G.bust=0;
+}
+function startJail(){
+  G.heat=0;G.stars=0;G.bounty=0;G.bust=0;G.pick=null;
+  for(const c of vehicles)if(c.role==='cop'){c.chase=false;c.ai=null;}
+  for(const v of G.blocks)removeV(v);G.blocks=[];for(const sp of G.spikes)scene.remove(sp.g);G.spikes=[];removeHeli();
+  if(!me.T.walk){const old=me;old.role='parked';old.in={thr:0,brk:0,steer:0,hb:true};old.ai=null;old.mine=true;old.boost=false;me=mk('foot',null,0,0,0,'player');}
+  else{me.role='player';}
+  me.in={thr:0,brk:0,steer:0,hb:false,up:false};
+  const I=ensureInterior('station');G.interior={dr:STATION,I,jail:true};G.jail={key:false,gateOpen:false,hold:null,spot:0,tries:0};
+  resetJail();ground.visible=false;$('mini').style.visibility='hidden';
+  toast('Arrested! Pick the lock and break out','bad');
+}
+function guardSees(gd){
+  const dx=me.x-gd.x,dz=me.z-gd.z,d=hyp(dx,dz),run=!!(inp.nitro&&(inp.thr||inp.brk));
+  if(d<1.8)return true;if(run&&d<5)return true;if(d>7.5)return false;
+  if(Math.abs(wrap(Math.atan2(dx,dz)-gd.h))>.6)return false;
+  return hasLOS(gd.x,gd.z,me.x,me.z);
+}
+function caught(){
+  const J=G.jail;G.cash=Math.max(0,G.cash-50);J.tries++;toast('Caught! Back to your cell (−$50)','bad');sfxCrash(.5);G.shake=.5;resetJail();
+}
+function jailUpdate(dt){
+  const I=G.interior.I,J=G.jail;let seen=false;
+  for(const gd of I.guards){
+    if(gd.pause>0){gd.pause-=dt;gd.h=gd.baseH+Math.sin((gd.pauseTot-gd.pause)*2.4)*.85;}
+    else{const wp=gd.path[gd.i],dx=wp[0]-gd.x,dz=wp[1]-gd.z,d=hyp(dx,dz);
+      if(d<.2){gd.i=(gd.i+1)%gd.path.length;const nx=gd.path[gd.i];gd.pause=gd.pauseTot=1.7;gd.baseH=Math.atan2(nx[0]-gd.x,nx[1]-gd.z);}
+      else{gd.x+=dx/d*1.7*dt;gd.z+=dz/d*1.7*dt;gd.h+=wrap(Math.atan2(dx,dz)-gd.h)*Math.min(1,dt*6);}}
+    const s=guardSees(gd);if(s)seen=true;
+    gd.g.position.set(gd.x,0,gd.z);gd.g.rotation.y=gd.h;gd.cone.position.set(gd.x,.07,gd.z);gd.cone.rotation.y=gd.h-Math.PI/2;gd.cone.material.opacity=s?.42:.2;
+  }
+  J.spot=seen?J.spot+dt/.8:Math.max(0,J.spot-dt*1.1);G.bust=J.spot*2.2;
+  if(J.spot>=1){caught();return;}
+  const held=keys.KeyE||touch.e;
+  if(J.hold){if(!held||hyp(me.x-J.hold.x,me.z-J.hold.z)>2.6){J.hold=null;}else{J.hold.t+=dt;if(J.hold.t>=J.hold.need)J.hold.done();}}
+  G.pick=J.hold?{t:J.hold.t/J.hold.need*3}:null;
+  const near=(p,r)=>hyp(me.x-p.x,me.z-p.z)<r;
+  if(J.hold)G.promptTxt=null;
+  else if(!J.gateOpen&&near(I.gate,2.2))G.promptTxt='Hold E to pick the lock';
+  else if(!J.key&&near(I.desk,2.4))G.promptTxt='Take the keycard';
+  else if(near(I.exit,2.6))G.promptTxt=J.key?'Hold E to swipe out':'The door is locked';
+  else G.promptTxt=null;
+}
+function jailAct(){
+  const I=G.interior.I,J=G.jail,near=(p,r)=>hyp(me.x-p.x,me.z-p.z)<r;
+  if(!J.gateOpen&&near(I.gate,2.2)){G.pickLabel='PICKING THE LOCK';J.hold={x:I.gate.x,z:I.gate.z,t:0,need:4,done:()=>{J.gateOpen=true;J.hold=null;removeCol(I.gateC);I.gateC.live=false;I.gateBars.forEach(b=>b.visible=false);toast('Lock picked! Sneak past the guards','good');sfxCoin();}};return;}
+  if(!J.key&&near(I.desk,2.4)){J.key=true;I.card.visible=false;toast('Got the keycard — now the exit','good');sfxCoin();return;}
+  if(near(I.exit,2.6)){if(!J.key){toast('The door is locked — find a keycard on the desk','warn');return;}G.pickLabel='SWIPING THE KEYCARD';J.hold={x:I.exit.x,z:I.exit.z,t:0,need:1.8,done:()=>escapeJail()};return;}
+  toast('Pick the lock, grab the keycard, then reach the exit','');
+}
+function escapeJail(){
+  G.interior=null;G.jail=null;G.pick=null;G.pickLabel=null;G.bust=0;ground.visible=true;$('mini').style.visibility='visible';
+  me.x=STATION.x+STATION.nx*1.8;me.z=STATION.z;me.h=Math.atan2(STATION.nx,STATION.nz);me.vx=me.vz=0;G.camH=me.h;G.promptTxt=null;
+  if(G.copMode!=='off')G.heat=Math.max(G.heat,18);
+  toast('You broke out!','good');sfxCoin();
+}
 
 /* ---------------- online: other drivers via the room capability ---------------- */
 const NET={cn:new Map(),cm:'',cnum:Math.floor(Math.random()*1e6),chatOpen:false,chatT:0,room:null,remotes:new Map(),sendT:0,recT:0,honk:0,name:'',last:new Map(),count:1};
@@ -2075,7 +2182,7 @@ function seg(id,fn){const s=$(id);s.querySelectorAll('button').forEach(b=>b.addE
 seg('segCops',v=>{G.copMode=v;});seg('segEnv',v=>{G.envMode=v;if(v==='sync')syncEnv(true);else applyEnv(v);});
 $('go').addEventListener('click',startGame);
 $('resume').addEventListener('click',()=>togglePause());
-$('again').addEventListener('click',()=>{respawnPlayer();G.state='play';$('over').hidden=true;$('hud').hidden=false;$('touch').hidden=!isTouch;G.play=0;G.copsDown=0;G.escapes=0;G.maxStars=0;G.bounty=0;G.hits=0;G.bestJump=0;});
+$('again').addEventListener('click',()=>{startJail();G.state='play';$('over').hidden=true;$('hud').hidden=false;$('touch').hidden=!isTouch;G.play=0;G.copsDown=0;G.escapes=0;G.maxStars=0;G.bounty=0;G.hits=0;G.bestJump=0;});
 $('tomenu').addEventListener('click',()=>{respawnPlayer();G.state='menu';$('over').hidden=true;$('menu').hidden=false;removeV(me);setKind(G.kind);G.cash=Math.round(G.cash);});
 $('bGarage').addEventListener('click',()=>{if(G.state==='play')openGarage();});$('gbuy').addEventListener('click',buySkin);$('gdone').addEventListener('click',closeGarage);addEventListener('pagehide',saveGame);
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false);}});
@@ -2096,7 +2203,7 @@ for(let i=0;i<20;i++)spawnTraffic(false);
 for(let i=0;i<3;i++)spawnPatrol();
 for(let i=0;i<24;i++)spawnPed(false);
 G.envMode='sync';syncEnv(true);resize();
-window.__GC={DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
+window.__GC={startJail,STATION,DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
 requestAnimationFrame(frame);
 })();
 </script>
