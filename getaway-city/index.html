@@ -127,6 +127,11 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
 #chatbar{left:50%;bottom:112px;transform:translateX(-50%);width:min(440px,84vw);pointer-events:auto}
 #chatin{width:100%;box-sizing:border-box;background:rgba(9,10,22,.85);border:2px solid var(--sodium);border-radius:8px;padding:10px 12px;font:500 16px var(--body);color:var(--paper);user-select:text;-webkit-user-select:text}
 #chatin:focus{outline:none}
+#shopmenu{justify-content:center;background:rgba(5,6,14,.6)}
+.sitem{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;margin:6px 0;padding:10px 12px;border-radius:9px;background:var(--sign-d);border:2px solid rgba(243,240,228,.4);text-align:left;font:400 13px/1.3 var(--body);color:var(--paper)}
+.sitem b{font:700 18px var(--display);letter-spacing:.06em;text-transform:uppercase}
+.sitem em{font:700 20px var(--display);font-style:normal;color:var(--sodium)}
+.sitem:disabled{opacity:.45;cursor:default}.sitem:not(:disabled):hover{border-color:var(--sodium)}
 #online{font:600 12px var(--display);letter-spacing:.14em;color:#7dff9a;text-shadow:0 1px 3px #000}
 #pname{width:100%;box-sizing:border-box;background:var(--sign-d);border:2px solid rgba(243,240,228,.35);border-radius:8px;padding:8px 10px;font:600 16px var(--display);letter-spacing:.08em;color:var(--paper);user-select:text;-webkit-user-select:text}
 #pname:focus{outline:3px solid var(--sodium);outline-offset:1px}
@@ -161,7 +166,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
     <div class="bl">
       <div id="vname"></div>
       <div class="hp"><b id="hpbar"></b></div>
-      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
+      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
     </div>
     <div class="br"><div id="spd">0</div><small>KM/H</small><div class="nos" id="nos"><b id="nosbar"></b></div><small>NITRO</small></div>
     <div id="chat"></div>
@@ -217,6 +222,12 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
       <div id="gdecalrow"><div class="lab">Decals</div><div class="sw" id="gdecal"></div></div>
       <p id="ginfo"></p>
       <div class="row"><button type="button" id="gbuy" class="pri">Buy</button><button type="button" id="gdone">Done</button></div></div>
+  </div>
+
+  <div id="shopmenu" class="screen" hidden>
+    <div class="card gcard"><h2 id="shoptitle">Shop</h2><p>Cash <b id="shopcash">$0</b></p>
+      <div id="shopitems"></div>
+      <div class="row"><button type="button" id="shopdone" class="pri">Done</button></div></div>
   </div>
 
   <div id="over" class="screen" hidden>
@@ -690,7 +701,7 @@ function shopUV(g,w,d){const uv=g.attributes.uv;for(let f=0;f<6;f++)for(let k=0;
 function addBuilding(ch,rnd,cx,cz,w,d,h){
   const g=new T.BoxGeometry(w,h,d);windowUV(g,w,h,d,rnd(),0);
   const m=new T.Mesh(g,bMats[(rnd()*bMats.length)|0]);m.position.set(cx,h/2,cz);ch.add(m);
-  if(h>12&&rnd()<.85){const sg=new T.BoxGeometry(w+.8,4.2,d+.8);shopUV(sg,w+.8,d+.8);const s=new T.Mesh(sg,shopMats[(rnd()*4)|0]);s.position.set(cx,2.1,cz);ch.add(s,240);}
+  if(h>12&&rnd()<.85){const sg=new T.BoxGeometry(w+.8,4.2,d+.8);shopUV(sg,w+.8,d+.8);const s=new T.Mesh(sg,shopMats[(rnd()*4)|0]);s.position.set(cx,2.1,cz);ch.add(s,240);addDoor(ch,rnd,cx,cz,w,d);}
   const c={x0:cx-w/2-.4,x1:cx+w/2+.4,z0:cz-d/2-.4,z1:cz+d/2+.4,h};addCol(c,ch.cols);ch.rects.push(c);
 }
 function addPad(ch,x,z,fresh,hd){
@@ -732,7 +743,7 @@ function spawnParkedIn(i,j,rnd){
 function genBlock(i,j){
   const key=i+','+j;if(chunks.has(key))return;
   const type=blockType(i,j),rnd=rngFor(i,j),x0=i*P+HALF,z0=j*P+HALF,cx=x0+BLOCK/2,cz=z0+BLOCK/2,fresh=!spawnedBlocks.has(key),near=Math.abs(i)<=1&&Math.abs(j)<=1;
-  const ch={i,j,key,type,nodes:[],cols:[],rects:[],ramps:[],shops:[],pads:[]};
+  const ch={i,j,key,type,x0,z0,doors:[],nodes:[],cols:[],rects:[],ramps:[],shops:[],pads:[]};
   ch.group=new T.Group();ch.group.cen=[i*P+P/2,45,j*P+P/2];ch.group.bsr=135;scene.add(ch.group);
   ch.add=(n,cull)=>{if(cull)n.cullD=cull;ch.group.add(n);ch.nodes.push(n);return n;};
   chunks.set(key,ch);spawnedBlocks.add(key);
@@ -777,6 +788,7 @@ function unloadChunk(ch){
   for(const r of ch.ramps){const k=ramps.indexOf(r);if(k>=0)ramps.splice(k,1);}
   for(const s of ch.shops){const k=shops.indexOf(s);if(k>=0)shops.splice(k,1);}
   for(const p of ch.pads){const k=HELIPADS.indexOf(p);if(k>=0)HELIPADS.splice(k,1);}
+  for(const d of ch.doors){const k=DOORS.indexOf(d);if(k>=0)DOORS.splice(k,1);}
   spawnedBlocks.delete(ch.key);chunks.delete(ch.key);
 }
 const RAD=7;
@@ -1217,7 +1229,7 @@ function partUpdate(s,dt,g){for(let i=0;i<s.n;i++){if(s.life[i]<=0)continue;s.li
   s.geo.attributes.position.needsUpdate=true;s.geo.attributes.color.needsUpdate=true;}
 
 /* ---------------- game state ---------------- */
-const G={envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
+const G={disguiseT:0,interior:null,inShop:false,promptTxt:null,envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
   env:'dusk',cam:0,shake:0,muted:false,spawnT:0,trafT:0,sprayCool:0,spray:null,crimeT:0,speedT:0,headI:1,starsPrev:0,heli:null,heliAway:0,flash:false,camH:0,prompt:null,
   copsNear(d){for(const c of vehicles)if(c.role==='cop'&&!c.dead&&hyp(c.x-me.x,c.z-me.z)<d)return true;return false;}};
 const shops=[],coins=[],ramps=[],peds=[];
@@ -1587,7 +1599,7 @@ function hudUpdate(){
   $('vig').style.opacity=G.bust>.05?String(clamp(G.bust/2.2,0,1)):(hpf<.25?.5:0);
   // swap prompt
   {const pk=$('pick');pk.hidden=!G.pick;if(G.pick)pk.querySelector('b').style.width=Math.min(100,G.pick.t/3*100)+'%';}
-  const pr=$('prompt');if(G.prompt){pr.hidden=false;pr.querySelector('span').textContent=(G.prompt.T.cop?'Hold to break into the ':'Take the ')+G.prompt.T.name;}else pr.hidden=true;
+  const pr=$('prompt');if(G.promptTxt){pr.hidden=false;pr.querySelector('span').textContent=G.promptTxt;}else if(G.prompt){pr.hidden=false;pr.querySelector('span').textContent=(G.prompt.T.cop?'Hold to break into the ':'Take the ')+G.prompt.T.name;}else pr.hidden=true;
 }
 
 /* ---------------- gameplay actions ---------------- */
@@ -1614,6 +1626,8 @@ function pickUpdate(dt){
   p.t+=dt;if(p.t>=3){G.pick=null;G.pickOK=v;trySwap();}
 }
 function trySwap(){
+  if(G.interior){interiorAct();return;}
+  {const dr=nearestDoor();if(dr){tryEnter(dr);return;}}
   if(G.spray)return;const v=nearestSwap();if(!v){toast('Nothing to steal nearby','');return;}
   if(v.T.cop&&G.pickOK!==v){
     if(G.pick&&G.pick.v===v)return;
@@ -1674,6 +1688,7 @@ function setKind(kind){
   G.kind=kind;me=mk(kind,null,x,z,h,'parked');me.in.hb=true;applySkin(me);
 }
 function togglePause(forcePause){
+  if(G.inShop){closeShop();return;}
   if(G.inGarage){closeGarage();return;}
   if(G.state==='play'){G.state='paused';$('pause').hidden=false;}
   else if(G.state==='paused'&&!forcePause){G.state='play';$('pause').hidden=true;last=performance.now();}
@@ -1681,6 +1696,7 @@ function togglePause(forcePause){
 
 /* ---------------- main update ---------------- */
 function worldUpdate(dt){
+  if(G.disguiseT>0)G.disguiseT=Math.max(0,G.disguiseT-dt);
   G.time+=dt;G.flash=(G.time*5)%2<1;if(G.crimeT>0)G.crimeT-=dt;if(G.sprayCool>0)G.sprayCool-=dt;
   // player controls
   if(G.state==='play'&&!G.spray){me.in.thr=inp.thr;me.in.brk=inp.brk;me.in.steer=inp.steer;me.in.hb=inp.hb;me.in.up=inp.nitro;}
@@ -1691,6 +1707,7 @@ function worldUpdate(dt){
       for(let k=0;k<2;k++)emit(SPK,me.x-sh*b,.5+me.y,me.z-ch*b,-sh*8+rand(-1.5,1.5),rand(0,2),-ch*8+rand(-1.5,1.5),rand(.15,.3),.4,.75,1);}}
     else{G.nitroT-=dt;if(G.nitroT<=0)G.nitro=Math.min(100,G.nitro+13*dt);}}
   else me.boost=false;
+  if(G.interior){interiorUpdate(dt);return;}
   if(G.state==='play'||G.state==='menu'||G.state==='busted'){
   const act=[];
   for(const v of vehicles){v.age+=dt;const d=Math.abs(v.x-me.x)+Math.abs(v.z-me.z);v.far=d>420;v.m.root.visible=d<(v.role==='parked'?230:320);if(v.far)continue;act.push(v);}
@@ -1715,6 +1732,7 @@ function worldUpdate(dt){
     for(const c of coins)if(!c.m.visible){c.t-=dt;if(c.t<=0)spawnCoin(c);}
     // swap prompt
     pickUpdate(dt);
+    {const dr=nearestDoor();G.promptTxt=dr?(me.T.walk?'Enter the '+dr.name:'Go into the '+dr.name):null;}
     const nv=nearestSwap();G.prompt=nv&&Math.hypot(me.vx,me.vz)<11&&!G.spray?nv:null;
     if(G.prompt){marker.visible=true;marker.position.set(G.prompt.x,(G.prompt.kind==='bus'?5:G.prompt.kind==='heli'?5:G.prompt.kind==='van'||G.prompt.kind==='suv'||G.prompt.kind==='pickup'?4.2:G.prompt.kind==='bike'?3.0:3.0)+Math.sin(G.time*5)*.25,G.prompt.z);}else marker.visible=false;
     // headlights
@@ -1770,7 +1788,7 @@ function manageSpawns(dt){
 function wantedUpdate(dt){
   manageBlocks(dt);
   if(G.copMode==='off'){G.heat=0;G.stars=0;G.seen=false;return;}
-  const sight=me.T.sight*(G.env==='day'?1.1:1);let seen=false;
+  const sight=me.T.sight*(G.env==='day'?1.1:1)*(G.disguiseT>0?.5:1);let seen=false;
   for(const c of vehicles){if(c.role!=='cop'||c.dead)continue;
     const d=hyp(c.x-me.x,c.z-me.z);
     if(d<sight){c.losT-=dt;if(c.losT<=0){c.losT=.3;c.los=me.y>35?true:hasLOS(c.x,c.z,me.x,me.z);}if(d<10)c.los=true;}else c.los=false;
@@ -1815,6 +1833,7 @@ function wantedUpdate(dt){
 function cameraUpdate(dt){
   ground.position.set(Math.round(camera.position.x/P)*P,0,Math.round(camera.position.z/P)*P);
   const p=me;
+  if(G.interior){camera.position.set(p.x,9,p.z-8.2);camera.lookAt(p.x,.6,p.z+.5);camera.fov+=((isPortrait()?72:54)-camera.fov)*Math.min(1,dt*5);camera.updateProjectionMatrix();return;}
   if(G.state==='menu'){const a=G.time*.35,r=p.T.len*1.5+4.2;
     camera.position.set(p.x+Math.sin(a)*r,2.1+Math.sin(G.time*.3)*.3,p.z+Math.cos(a)*r);camera.lookAt(p.x,.9,p.z);camera.fov=isPortrait()?62:46;camera.updateProjectionMatrix();return;}
   const sh=Math.sin(p.h),ch=Math.cos(p.h),vf=p.vx*sh+p.vz*ch,sp=Math.hypot(p.vx,p.vz);
@@ -1847,6 +1866,108 @@ function updateLights(dt){
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();setupMini();}
 addEventListener('resize',resize);
 let last=performance.now();
+/* ---------------- shops you can walk into ---------------- */
+const DOORS=[],INTS={};
+const doorMat=new T.MeshBasicMaterial({color:0x9fe9ff}),doorFrame=new T.MeshLambertMaterial({color:0x15161c});
+const Mi=c=>{const k='i'+c;let m=mc.get(k);if(!m){const r=((c>>16)&255)*.3|0,g=((c>>8)&255)*.3|0,b=(c&255)*.3|0;m=new T.MeshLambertMaterial({color:c,emissive:(r<<16)|(g<<8)|b});mc.set(k,m);}return m;};
+const SHOP_NAMES={store:'Corner Store',clothes:'Clothing Shop'};
+function addDoor(ch,rnd,cx,cz,w,d){
+  const dW=cx-ch.x0,dE=ch.x0+BLOCK-cx,dN=cz-ch.z0,dS=ch.z0+BLOCK-cz,m=Math.min(dW,dE,dN,dS);
+  let nx=0,nz=0;if(m===dW)nx=-1;else if(m===dE)nx=1;else if(m===dN)nz=-1;else nz=1;
+  const dx=cx+nx*(w/2+.44),dz=cz+nz*(d/2+.44),fr=new T.Mesh(G_BOX,doorFrame),dr=new T.Mesh(G_BOX,doorMat);
+  fr.scale.set(nx?.06:2.1,2.9,nz?.06:2.1);fr.position.set(dx,1.45,dz);dr.scale.set(nx?.12:1.7,2.6,nz?.12:1.7);dr.position.set(dx,1.3,dz);
+  ch.add(fr,200);ch.add(dr,200);
+  const kind=rnd()<.55?'store':'clothes',rec={x:dx,z:dz,nx,nz,kind,name:SHOP_NAMES[kind]};DOORS.push(rec);ch.doors.push(rec);
+}
+function makeNpc(shirt,skin,pants){const g=new T.Group();part(g,UB,Mt(shirt),.5,.65,.28,0,1.15,0);part(g,SPH,Mt(skin),.17,.17,.17,0,1.62,0);
+  for(const sx of[-1,1])part(g,UB,Mt(pants),.2,.8,.22,sx*.13,.42,0);return g;}
+function checkerTex(c1,c2){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle=c1;g.fillRect(0,0,64,64);g.fillStyle=c2;g.fillRect(0,0,32,32);g.fillRect(32,32,32,32);return new T.CanvasTexture(c);}
+function buildInterior(kind){
+  const K=kind==='clothes'?1:0,cx=30000+K*60,cz=30000,g=new T.Group();g.cen=[cx,2,cz];g.bsr=30;scene.add(g);
+  const pal=K?{f1:'#d9c3a5',f2:'#c4a885',wall:0xd9b3c9,shelf:0xa87bc2,accent:0xff6fb5,counter:0x8a4fb0}:{f1:'#e8f1f5',f2:'#c9dde6',wall:0xf1ead2,shelf:0x6c8ebf,accent:0x35d0ff,counter:0x2f6fe0};
+  let seed=K*77+5;const rn=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const box=(w,h,d,x,y,z,mat,col)=>{const m=new T.Mesh(G_BOX,mat);m.scale.set(w,h,d);m.position.set(cx+x,y,cz+z);g.add(m);if(col)addCol({x0:cx+x-w/2,x1:cx+x+w/2,z0:cz+z-d/2,z1:cz+z+d/2},null);return m;};
+  const vd=new T.Mesh(new T.PlaneGeometry(140,140),Mb(0x0d0e14));vd.rotation.x=-Math.PI/2;vd.position.set(cx,-.02,cz);g.add(vd);
+  const fl=new T.Mesh(new T.PlaneGeometry(14,16),new T.MeshBasicMaterial({map:checkerTex(pal.f1,pal.f2)}));fl.geometry.attributes.uv.array.set([0,0,7,0,7,8,0,8]);fl.rotation.x=-Math.PI/2;fl.position.set(cx,.02,cz);g.add(fl);
+  const wm=Mi(pal.wall);
+  box(.4,3.6,16.8,-7.2,1.8,0,wm,1);box(.4,3.6,16.8,7.2,1.8,0,wm,1);box(14.8,3.6,.4,0,1.8,8.2,wm,1);box(14.8,1.1,.4,0,.55,-8.2,Mi(pal.accent),1);
+  box(3,.04,1.6,0,.05,-7.2,Mb(0xffe9b0));
+  const ex=label('EXIT','#9dffb4');ex.scale.set(4,1,1);ex.position.set(cx,1.9,cz-7.7);g.add(ex);
+  const goods=(x0,x1,z0,z1,y)=>{const n=((x1-x0)*(z1-z0)*2.2)|0;for(let q=0;q<Math.max(6,n);q++){const gm=Mi(pick([0xff6b6b,0xffd166,0x06d6a0,0x4ea8de,0xf78fb3,0xf4f1de,0x9b5de5]));box(.32,.32,.32,x0+rn()*(x1-x0),y+.17,z0+rn()*(z1-z0),gm);}};
+  if(!K){
+    box(1.1,2.3,11,-6.2,1.15,-.5,Mi(0x9fd3ff),1);box(1.1,2.0,11,6.2,1.0,-.5,Mi(pal.shelf),1);goods(5.8,6.6,-5.5,4.5,2.0);
+    for(const x of[-2.6,2.6])for(const z of[-1.4,1.2]){box(3.4,1.5,.9,x,.75,z,Mi(pal.shelf),1);goods(x-1.5,x+1.5,z-.3,z+.3,1.5);}
+  }else{
+    for(const x of[-4.4,-1.2,2,4.8])for(const z of[-1.8,1.2]){box(2.2,.15,.25,x,1.6,z,Mi(0x888c99),1);box(.1,1.6,.1,x-1,.8,z,Mi(0x888c99));box(.1,1.6,.1,x+1,.8,z,Mi(0x888c99));
+      for(let q=0;q<7;q++)box(.22,.9,.1,x-.95+q*.32,1.1,z,Mi(pick([0xff6b6b,0xffd166,0x06d6a0,0x4ea8de,0xf78fb3,0xf4f1de,0x9b5de5,0x222831])));}
+    box(.1,2.2,3,-6.9,1.4,3,Mi(0xcfeeff));box(2.4,2.6,2.4,5.6,1.3,6.2,Mi(0xb28ad6),1);
+  }
+  box(6,1.1,1.2,0,.55,4.6,Mi(pal.counter),1);box(6.3,.1,1.5,0,1.15,4.6,Mi(0xf2f2ee));box(.6,.5,.5,1.8,1.45,4.6,Mt(0x222228));
+  const keeper=makeNpc(K?0xb5459f:0x2f6fe0,pick([0xf1c27d,0xc68642,0x8d5524]),0x2b3a55);keeper.position.set(cx,0,cz+5.9);keeper.rotation.y=Math.PI;g.add(keeper);
+  const sg=label(K?'FASHION':'OPEN 24H',K?'#ff9ad5':'#ffd78a');sg.scale.set(7,1.8,1);sg.position.set(cx,3.0,cz+7.8);g.add(sg);
+  return{cx,cz,spawn:{x:cx,z:cz-5.4},counter:{x:cx,z:cz+2.8},exit:{x:cx,z:cz-7},keeper,kind};
+}
+function ensureInterior(kind){return INTS[kind]||(INTS[kind]=buildInterior(kind));}
+function nearestDoor(){
+  if(G.interior||G.spray)return null;if(me.T.fly&&me.y>2)return null;
+  const range=me.T.walk?3.4:(Math.hypot(me.vx,me.vz)<9?6.5:0);if(!range)return null;
+  let best=null,bd=range;for(const d of DOORS){const q=hyp(d.x-me.x,d.z-me.z);if(q<bd){bd=q;best=d;}}return best;
+}
+function tryEnter(dr){
+  if(G.spray)return;
+  for(const c of vehicles)if(c.role==='cop'&&!c.dead&&!c.blocker&&c.chase&&hyp(c.x-me.x,c.z-me.z)<45&&hasLOS(c.x,c.z,me.x,me.z)){toast('Cops are right behind you!','bad');return;}
+  if(!me.T.walk){exitCar();if(!me.T.walk)return;}
+  enterShop(dr);
+}
+function enterShop(dr){
+  const I=ensureInterior(dr.kind);G.interior={dr,I};
+  for(const c of vehicles)if(c.role==='cop'){c.chase=false;c.ai=null;}
+  for(const v of G.blocks)removeV(v);G.blocks=[];for(const sp of G.spikes)scene.remove(sp.g);G.spikes=[];removeHeli();G.pick=null;
+  me.x=I.spawn.x;me.z=I.spawn.z;me.h=0;me.vx=me.vz=0;me.y=0;G.camH=0;
+  ground.visible=false;$('mini').style.visibility='hidden';toast(dr.name,'good');
+  if(G.stars>0)toast('You’re out of sight in here','good');
+}
+function leaveShop(){
+  const dr=G.interior.dr;G.interior=null;ground.visible=true;$('mini').style.visibility='visible';
+  me.x=dr.x+dr.nx*1.6;me.z=dr.z+dr.nz*1.6;me.h=Math.atan2(dr.nx,dr.nz);me.vx=me.vz=0;G.camH=me.h;G.promptTxt=null;
+}
+function starsFromHeat(){
+  const th=[8,28,48,68,88];let st=0;for(const t of th)if(G.heat>=t)st++;
+  if(st!==G.stars){if(st===0&&G.stars>0)escape();G.stars=st;}
+}
+function interiorUpdate(dt){
+  G.time+=dt;G.play+=dt;const I=G.interior.I;
+  const n=Math.max(1,Math.ceil(dt/.02)),h=dt/n;for(let s=0;s<n;s++){stepFoot(me,h);collideWorld(me,h);updCircles(me);}
+  syncMesh(me,dt);
+  if(G.heat>0){G.heat=Math.max(0,G.heat-dt*4.5);starsFromHeat();}
+  const dc=hyp(me.x-I.counter.x,me.z-I.counter.z);
+  if(dc<2.8)G.promptTxt='Talk to the shopkeeper';else if(me.z<I.cz-6.1&&Math.abs(me.x-I.cx)<2.6)G.promptTxt='Leave the shop';else G.promptTxt=null;
+  G.prompt=null;if(marker)marker.visible=false;
+  partUpdate(SPK,dt,14);partUpdate(SMK,dt,-1.2);
+}
+function interiorAct(){
+  const I=G.interior.I;
+  if(hyp(me.x-I.counter.x,me.z-I.counter.z)<2.8)openShop();
+  else if(me.z<I.cz-6.1&&Math.abs(me.x-I.cx)<2.6)leaveShop();
+  else toast('Walk to the counter, or to the door to leave','');
+}
+const SHOP_ITEMS={
+  store:[{n:'Energy drink',p:30,d:'Fills your nitro.',f:()=>{G.nitro=100;toast('Nitro full','good');}},
+    {n:'Repair kit',p:60,d:'Repairs the car you left outside.',f:()=>{let c=0;for(const v of vehicles)if(v.mine){v.hp=v.T.hp;v.dead=false;v.flat=false;c++;}if(!c){toast('No car of yours around','warn');return false;}toast('Car repaired','good');}},
+    {n:'Lottery ticket',p:20,d:'Scratch it and see.',f:()=>{const r=Math.random(),w=r<.5?0:r<.8?40:r<.95?100:500;G.cash+=w;toast(w?'You won $'+w+'!':'No luck this time',w?'good':'');}}],
+  clothes:[{n:'Baseball cap',p:50,d:'Police see you from half as far for 1 minute.',f:()=>{G.disguiseT=Math.max(G.disguiseT,60);toast('Disguised for 1 min','good');}},
+    {n:'Hoodie and shades',p:140,d:'Disguised for 4 minutes, and cools your heat by 20.',f:()=>{G.disguiseT=240;G.heat=Math.max(0,G.heat-20);starsFromHeat();toast('Disguised for 4 min','good');}}]
+};
+function renderShop(){
+  const I=G.interior.I,box=$('shopitems');box.innerHTML='';$('shopcash').textContent='$'+Math.round(G.cash);$('shoptitle').textContent=SHOP_NAMES[I.kind];
+  SHOP_ITEMS[I.kind].forEach(it=>{const b=document.createElement('button');b.type='button';b.className='sitem';b.disabled=G.cash<it.p;
+    const l=document.createElement('span');const t=document.createElement('b');t.textContent=it.n;l.appendChild(t);l.appendChild(document.createElement('br'));l.appendChild(document.createTextNode(it.d));
+    const pr=document.createElement('em');pr.textContent='$'+it.p;b.appendChild(l);b.appendChild(pr);
+    b.addEventListener('click',()=>{if(G.cash<it.p)return;if(it.f()===false)return;G.cash-=it.p;sfxCoin();saveGame();renderShop();});box.appendChild(b);});
+}
+function openShop(){if(G.state!=='play')return;G.state='paused';G.inShop=true;$('pause').hidden=true;$('shopmenu').hidden=false;renderShop();}
+function closeShop(){if(!G.inShop)return;G.inShop=false;$('shopmenu').hidden=true;G.state='play';last=performance.now();}
+
 /* ---------------- online: other drivers via the room capability ---------------- */
 const NET={cn:new Map(),cm:'',cnum:Math.floor(Math.random()*1e6),chatOpen:false,chatT:0,room:null,remotes:new Map(),sendT:0,recT:0,honk:0,name:'',last:new Map(),count:1};
 const cleanName=s=>String(s==null?'':s).replace(/[^\w .!?@#-]/g,'').trim().slice(0,16);
@@ -1915,7 +2036,7 @@ function netSync(dt){
   }
   NET.sendT-=dt;
   if(NET.sendT<=0){NET.sendT=.09;
-    const playing=G.state==='play'||G.state==='paused'||G.state==='busted';
+    const playing=(G.state==='play'||G.state==='paused'||G.state==='busted')&&!G.interior;
     const eq=netEq();
     room.presence({pl:playing?1:0,x:+me.x.toFixed(1),z:+me.z.toFixed(1),y:+me.y.toFixed(1),h:+me.h.toFixed(2),k:me.kind,c:me.stockColor,c2:me.color2==null?null:me.color2,s:Math.round(Math.hypot(me.vx,me.vz)),n:myName(),e:eq,lt:G.lightsOn&&me.T.cop?1:0,hk:NET.honk,dd:me.dead?1:0,cm:NET.cm,cn:NET.cnum}).catch(()=>{});
   }
@@ -1960,6 +2081,7 @@ $('bGarage').addEventListener('click',()=>{if(G.state==='play')openGarage();});$
 $('chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();closeChat(true);}else if(e.key==='Escape'){e.preventDefault();closeChat(false);}});
 $('chatin').addEventListener('keyup',e=>e.stopPropagation());$('chatin').addEventListener('blur',()=>closeChat(false));
 $('bChat').addEventListener('click',openChat);
+$('shopdone').addEventListener('click',closeShop);
 $('bCam').addEventListener('click',cycleCam);$('bSnd').addEventListener('click',toggleMute);$('bPause').addEventListener('click',()=>togglePause());
 
 loadGame();
@@ -1974,7 +2096,7 @@ for(let i=0;i<20;i++)spawnTraffic(false);
 for(let i=0;i<3;i++)spawnPatrol();
 for(let i=0;i<24;i++)spawnPed(false);
 G.envMode='sync';syncEnv(true);resize();
-window.__GC={applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
+window.__GC={DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
 requestAnimationFrame(frame);
 })();
 </script>
