@@ -167,7 +167,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
     <div class="bl">
       <div id="vname"></div>
       <div class="hp"><b id="hpbar"></b></div>
-      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Rare finds: a tank (<kbd>Space</kbd> fires) and a fighter jet (hold <kbd>W</kbd>, press <kbd>Shift</kbd> at speed to take off) &nbsp; <kbd>Click</kbd> capture mouse: move to steer, left gas, right brake<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
+      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Rare finds (pink/orange map dots): a tank (<kbd>Space</kbd> fires) and a fighter jet (hold <kbd>W</kbd>, press <kbd>Shift</kbd> at speed to take off) &nbsp; <kbd>Click</kbd> capture mouse: move to steer, left gas, right brake<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
     </div>
     <div class="br"><div id="spd">0</div><small>KM/H</small><div class="nos" id="nos"><b id="nosbar"></b></div><small>NITRO</small></div>
     <div id="chat"></div>
@@ -767,11 +767,11 @@ function genBlock(i,j){
     if(fresh)for(const dz of[-13,-7,7,13])mk('cop',null,cx-w/2-3.4,cz+dz,Math.PI/2,'parked');
   }else if(type==='park'){
     flat(BLOCK-4,BLOCK-4,grassMat,.03);
-    for(let k=0;k<17;k++){const x=x0+5+rnd()*(BLOCK-10),z=z0+5+rnd()*(BLOCK-10),s=.85+rnd()*.65;if(hyp(x-cx,z-cz)<10||(h2(i,j,41)<.17&&hyp(x-cx,z-cz-16)<9)){rnd();continue;}
+    for(let k=0;k<17;k++){const x=x0+5+rnd()*(BLOCK-10),z=z0+5+rnd()*(BLOCK-10),s=.85+rnd()*.65;if(hyp(x-cx,z-cz)<10||(h2(i,j,41)<.4&&hyp(x-cx,z-cz-16)<9)){rnd();continue;}
       const t=new T.Mesh(G_TRUNK,trunkMat),l=new T.Mesh(G_LEAF,leafMats[(rnd()*3)|0]);for(const m of[t,l]){m.position.set(x,0,z);m.scale.set(s,s,s);m.rotation.y=k;ch.add(m,230);}
       addCol({x0:x-.7,x1:x+.7,z0:z-.7,z1:z+.7,tree:true,h:5},ch.cols);}
     addPad(ch,cx,cz,fresh,rnd()*6.28);
-    if(h2(i,j,41)<.17&&fresh)mk('jet',null,cx,cz+16,Math.PI/2,'parked');
+    if(h2(i,j,41)<.4&&fresh)mk('jet',null,cx,cz+16,Math.PI/2,'parked');
   }else{
     const dd=clamp(vnoise(i*.17+3.1,j*.17-1.7)*1.45-.1+clamp(1-hyp(i,j)/6,0,1)*.5,0,1);
     const nx=rnd()<.55?2:1,nz=rnd()<.55?2:1,lw=BLOCK/nx,ld=BLOCK/nz;
@@ -1757,6 +1757,7 @@ function drawMini(){
   for(const s of shops){if(!dot(s.x,s.z,5,'#2fe0e0')&&G.stars>0){const q=to(s.x,s.z),a=Math.atan2(q[1]-c,q[0]-c);mg.fillStyle='#2fe0e0';mg.beginPath();mg.arc(c+Math.cos(a)*(c-9),c+Math.sin(a)*(c-9),4*miniS,0,6.283);mg.fill();}}
   for(const v of vehicles)if(v.role==='traffic'&&!v.dead&&!v.far)dot(v.x,v.z,1.8,'#9aa3bd');
   for(const v of vehicles)if(v.role==='cop'&&!v.dead&&!v.far)dot(v.x,v.z,v.chase?3.6:3,v.chase?(G.flash?'#ff3b3b':'#3d8bff'):'#6f94ff');
+  for(const v of vehicles)if((v.kind==='jet'||v.kind==='tank')&&v.role!=='player'&&!v.dead){const col=v.kind==='jet'?'#ff4fd8':'#ff9a2e';if(!dot(v.x,v.z,5,col)){const q=to(v.x,v.z),a=Math.atan2(q[1]-c,q[0]-c);mg.fillStyle=col;mg.beginPath();mg.arc(c+Math.cos(a)*(c-9),c+Math.sin(a)*(c-9),3.5*miniS,0,6.283);mg.fill();}}
   if(G.heli)dot(G.heli.x,G.heli.z,4,'#fff');
   mg.restore();
   mg.fillStyle='#ffb21e';mg.beginPath();mg.moveTo(c,c-7*miniS);mg.lineTo(c+5*miniS,c+6*miniS);mg.lineTo(c,c+3*miniS);mg.lineTo(c-5*miniS,c+6*miniS);mg.closePath();mg.fill();
