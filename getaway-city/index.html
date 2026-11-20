@@ -167,7 +167,7 @@ button:focus-visible{outline:3px solid var(--sodium);outline-offset:2px}
     <div class="bl">
       <div id="vname"></div>
       <div class="hp"><b id="hpbar"></b></div>
-      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Rare finds (pink/orange map dots): a tank (<kbd>Space</kbd> fires) and a fighter jet (hold <kbd>W</kbd>, press <kbd>Shift</kbd> at speed to take off) &nbsp; <kbd>Click</kbd> capture mouse: move to steer, left gas, right brake<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
+      <div id="hint"><kbd>W</kbd><kbd>S</kbd> gas / brake &nbsp; <kbd>A</kbd><kbd>D</kbd> steer &nbsp; <kbd>Space</kbd> handbrake &nbsp; <kbd>Shift</kbd> nitro<br><kbd>E</kbd> swap vehicle &nbsp; <kbd>G</kbd> garage &nbsp; <kbd>F</kbd> get out &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>R</kbd> reset &nbsp; <kbd>N</kbd> time of day &nbsp; <kbd>L</kbd> police lights &nbsp; <kbd>T</kbd> chat<br>Rare finds (pink/orange map dots): a tank (<kbd>Space</kbd> fires) and a fighter jet (hold <kbd>W</kbd>, press <kbd>Shift</kbd> at speed to take off, <kbd>X</kbd> fires homing missiles) &nbsp; <kbd>Click</kbd> capture mouse: move to steer, left gas, right brake<br>Glowing shop doors: press <kbd>E</kbd> to go inside and hide.<br>Helicopter: <kbd>Shift</kbd> climb, <kbd>Space</kbd> descend. Pads marked <b>H</b>.<br>Find a cyan <b>Spray Shop</b> to lose the heat. Yellow ramps give big air.</div>
     </div>
     <div class="br"><div id="spd">0</div><small>KM/H</small><div class="nos" id="nos"><b id="nosbar"></b></div><small>NITRO</small></div>
     <div id="chat"></div>
@@ -1084,6 +1084,31 @@ function explode(x,y,z){
     const imp=28*f/Math.sqrt(v.mass);v.vx+=nx*imp;v.vz+=nz*imp;if(!v.dead){v.hp-=95*f;if(v.hp<=0){v.hp=0;v.dead=true;v.deadT=0;wreck(v);}}}
   for(const p of peds){if(p.state==='fly'||p.state==='down')continue;const d=hyp(p.x-x,p.z-z);if(d>7)continue;const nx=(p.x-x)/(d||1),nz=(p.z-z)/(d||1);p.state='fly';p.vx=nx*9;p.vz=nz*9;p.vy=rand(7,11);p.spin=rand(6,12);p.rx=0;}
 }
+const missiles=[];
+function hitBuilding(x,y,z){const m=.3;for(let a=Math.floor((x-m)/CELL);a<=Math.floor((x+m)/CELL);a++)for(let b=Math.floor((z-m)/CELL);b<=Math.floor((z+m)/CELL);b++){const l=cols.get(ckey(a,b));if(!l)continue;for(const c of l){if(c.tree||c.ramp)continue;if(x>c.x0-m&&x<c.x1+m&&z>c.z0-m&&z<c.z1+m&&y<(c.h||6))return true;}}return false;}
+function fireMissile(){
+  const sh=Math.sin(me.h),ch=Math.cos(me.h),sp=Math.hypot(me.vx,me.vz)+120,pv=me.y>2?clamp(me.vy/Math.max(40,sp),-.3,.3):0;
+  const x=me.x+sh*6,z=me.z+ch*6,y=me.y+1.0;
+  const m=new T.Group();part(m,CY,Mt(0xe9edf3),.22,2.0,.22,0,0,0,Math.PI/2);part(m,CY,Mb(0xffa133),.16,.9,.16,0,0,-1.3,Math.PI/2);m.position.set(x,y,z);m.rotation.y=me.h;scene.add(m);
+  missiles.push({m,x,y,z,vx:sh*sp,vz:ch*sp,vy:pv*sp,t:0,tg:null});
+  G.missT=.7;sfxCrash(.35);G.shake=Math.max(G.shake,.15);addHeat(30,'Firing a missile');
+}
+function missileUpdate(dt){
+  for(let i=missiles.length-1;i>=0;i--){const s=missiles[i];s.t+=dt;
+    if(!s.tg||s.tg.dead||s.tg.removed){let best=null,bd=1e9;const hd=Math.atan2(s.vx,s.vz);
+      for(const v of vehicles){if(v===me||v.remote||v.dead)continue;const dx=v.x-s.x,dz=v.z-s.z,d=hyp(dx,dz);if(d>400||d<8)continue;if(Math.abs(wrap(Math.atan2(dx,dz)-hd))>.5)continue;if(d<bd){bd=d;best=v;}}s.tg=best;}
+    if(s.tg){const dx=s.tg.x-s.x,dz=s.tg.z-s.z,dy=(s.tg.y+1)-s.y,sp=hyp(s.vx,s.vz),d=hyp(dx,dz),ta=Math.atan2(dx,dz),ca=Math.atan2(s.vx,s.vz),na=ca+clamp(wrap(ta-ca),-3*dt,3*dt);
+      s.vx=Math.sin(na)*sp;s.vz=Math.cos(na)*sp;s.vy+=(clamp(dy/Math.max(d,1),-1.5,1.5)*sp-s.vy)*Math.min(1,dt*6);}
+    let boom=false;
+    for(let k=0;k<4&&!boom;k++){s.x+=s.vx*dt/4;s.y+=s.vy*dt/4;s.z+=s.vz*dt/4;
+      if(s.y<=groundY(s.x,s.z)+.2||hitBuilding(s.x,s.y,s.z))boom=true;
+      else for(const v of vehicles){if(v===me||v.remote)continue;if(Math.abs(v.x-s.x)>8||Math.abs(v.z-s.z)>8)continue;
+        for(let q=0;q<v.T.nc&&!boom;q++)if(hyp(v.cx[q]-s.x,v.cz[q]-s.z)<v.T.rad+.8&&s.y<v.y+3.5&&s.y>v.y-1)boom=true;if(boom)break;}}
+    s.m.position.set(s.x,s.y,s.z);s.m.rotation.y=Math.atan2(s.vx,s.vz);
+    emit(SPK,s.x-s.vx*.02,s.y,s.z-s.vz*.02,rand(-1,1),rand(-1,1),rand(-1,1),.35,1,.7,.3);smoke(s.x,s.y,s.z,.2);
+    if(boom||s.t>4){explode(s.x,s.y,s.z);scene.remove(s.m);missiles.splice(i,1);}
+  }
+}
 function shellUpdate(dt){
   for(let i=shells.length-1;i>=0;i--){const s=shells[i];s.t+=dt;let boom=false;
     for(let k=0;k<4&&!boom;k++){s.x+=s.vx*dt/4;s.z+=s.vz*dt/4;
@@ -1404,7 +1429,7 @@ function partUpdate(s,dt,g){for(let i=0;i<s.n;i++){if(s.life[i]<=0)continue;s.li
   s.geo.attributes.position.needsUpdate=true;s.geo.attributes.color.needsUpdate=true;}
 
 /* ---------------- game state ---------------- */
-const G={fireT:0,transport:null,pickLabel:null,jail:null,disguiseT:0,interior:null,inShop:false,promptTxt:null,envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
+const G={fireT:0,missT:0,transport:null,pickLabel:null,jail:null,disguiseT:0,interior:null,inShop:false,promptTxt:null,envMode:'sync',eq:{},owned:{stock:true,none:true},inGarage:false,blocks:[],spikes:[],blockT:8,lastV:{x:0,z:0},nitro:100,nitroT:0,hits:0,bestJump:0,state:'menu',kind:'sports',copMode:'normal',heat:0,stars:0,cash:0,bounty:0,unseen:0,seen:false,last:{x:0,z:0},bust:0,time:0,play:0,maxStars:0,copsDown:0,escapes:0,
   env:'dusk',cam:0,shake:0,muted:false,spawnT:0,trafT:0,sprayCool:0,spray:null,crimeT:0,speedT:0,headI:1,starsPrev:0,heli:null,heliAway:0,flash:false,camH:0,prompt:null,
   copsNear(d){for(const c of vehicles)if(c.role==='cop'&&!c.dead&&hyp(c.x-me.x,c.z-me.z)<d)return true;return false;}};
 const shops=[],coins=[],ramps=[],peds=[];
@@ -1881,7 +1906,9 @@ function worldUpdate(dt){
   if(G.disguiseT>0)G.disguiseT=Math.max(0,G.disguiseT-dt);
   if(G.fireT>0)G.fireT-=dt;
   if(me.T.tank&&G.state==='play'&&!G.spray&&!G.transport&&!G.interior&&inp.hb&&!(G.fireT>0))fireShell();
-  shellUpdate(dt);
+  if(G.missT>0)G.missT-=dt;
+  if(me.T.jet&&G.state==='play'&&!G.interior&&keys.KeyX&&!(G.missT>0)&&me.y>0&&!me.dead)fireMissile();
+  shellUpdate(dt);missileUpdate(dt);
   G.time+=dt;G.flash=(G.time*5)%2<1;if(G.crimeT>0)G.crimeT-=dt;if(G.sprayCool>0)G.sprayCool-=dt;
   // player controls
   if(G.transport)transportUpdate(dt);
@@ -2415,7 +2442,7 @@ for(let i=0;i<20;i++)spawnTraffic(false);
 for(let i=0;i<3;i++)spawnPatrol();
 for(let i=0;i<24;i++)spawnPed(false);
 G.envMode='sync';syncEnv(true);resize();
-window.__GC={fireShell,shells,mouse,startJail,STATION,DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
+window.__GC={fireShell,shells,missiles,mouse,startJail,STATION,DOORS,enterShop,leaveShop,applySkin,openGarage,SKINS,setKind,mk,renderer,G,vehicles,ramps,peds,get me(){return me;},start:startGame,addHeat,TY};
 requestAnimationFrame(frame);
 })();
 </script>
