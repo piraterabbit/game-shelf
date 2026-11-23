@@ -22,35 +22,35 @@ page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Game Shelf</title>
 <style>
-:root{{--r-card:20px;--bg:#fff;--fg:#0e1330;--mut:#6b7085;--line:#e7e8ee;--chip:#f3f3f6;--ink:#0e1330;--ink-fg:#fff;--acc:#ffb84d;color-scheme:light}}
+:root{{--r-card:20px;--bg:#2e1c10;--fg:#f6ecd9;--mut:#c9b79c;--line:rgba(246,236,217,.22);--chip:rgba(246,236,217,.12);--ink:#ff9f1c;--ink-fg:#1a0f06;--acc:#ffb84d;color-scheme:dark}}
 *{{box-sizing:border-box}}
 html{{scroll-behavior:smooth}}
-body{{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}}
+body{{margin:0;min-height:100vh;color:var(--fg);background-color:var(--bg);background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 5px,rgba(255,255,255,.03) 5px 6px,transparent 6px 17px),repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 22px,transparent 22px 71px,rgba(0,0,0,.07) 71px 84px,transparent 84px 150px),linear-gradient(180deg,#4b2c18 0%,#38210f 45%,#27160a 100%);background-attachment:fixed;font:16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}}
 a{{color:inherit;text-decoration:none}}
 .wrap{{width:100%;margin:0;padding:0 clamp(16px,4vw,64px)}}
 header.top{{display:grid;grid-template-columns:1fr;gap:clamp(24px,5vw,72px);padding:clamp(24px,4vw,40px) 0 clamp(28px,4vw,48px)}}
 .avatar{{width:64px;height:64px;border-radius:50%;background:var(--ink);color:var(--ink-fg);display:grid;place-items:center;font-weight:800;font-size:1.35rem;letter-spacing:-.02em}}
 .who{{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 10px}}
 .who h1{{margin:0;font-size:1.9rem;letter-spacing:-.02em}}
-.badge{{background:#1d2a3a;color:#fff;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:6px}}
+.badge{{background:#0b0b0d;color:var(--ink);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:6px}}
 .headline{{margin:0;font-size:clamp(2.1rem,5.2vw,3.6rem);line-height:1.04;letter-spacing:-.035em;font-weight:800;text-wrap:balance}}
 .stats{{display:flex;gap:22px;flex-wrap:wrap;color:var(--mut);margin:22px 0 24px}}
 .stats b{{color:var(--fg);font-weight:600}}
 .actions{{display:flex;gap:12px;flex-wrap:wrap}}
-.btn{{display:inline-flex;align-items:center;height:48px;padding:0 24px;border-radius:999px;font-weight:600;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-weight:600;transition:background .15s,transform .15s}}
+.btn{{display:inline-flex;align-items:center;height:48px;padding:0 24px;border-radius:999px;font-weight:600;border:1px solid var(--line);background:rgba(11,11,13,.55);color:var(--fg);cursor:pointer;font:inherit;font-weight:600;transition:background .15s,transform .15s}}
 .btn:hover{{background:var(--chip)}}
 .btn.pri{{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}}
-.btn.pri:hover{{background:#1d2347}}
+.btn.pri:hover{{background:#ffb54a}}
 nav.bar{{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:clamp(24px,4vw,40px)}}
 .tabs{{display:flex;gap:4px;flex-wrap:wrap}}
 .tab{{font:inherit;font-weight:600;background:none;border:0;padding:10px 18px;border-radius:999px;cursor:pointer;color:var(--fg)}}
 .tab:hover{{background:var(--chip)}}
 .tab[aria-selected=true]{{background:var(--chip)}}
 .tab span{{color:var(--mut);font-weight:500;margin-left:4px}}
-select{{font:inherit;font-weight:500;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer}}
+select{{font:inherit;font-weight:500;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#0b0b0d;color:var(--fg);cursor:pointer}}
 .grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(20px,2.6vw,36px);padding-bottom:72px}}
-.shot{{display:flex;flex-direction:column;gap:10px;background:#0b0b0d;color:#fff;border-radius:10px;padding:14px 14px 12px;font-family:"Arial Black","Helvetica Neue",Impact,system-ui,sans-serif;box-shadow:0 1px 0 #2a2a30 inset,0 10px 24px rgba(14,19,48,.18);transition:transform .2s,box-shadow .2s}}
-.shot:hover,.shot:focus-visible{{transform:translateY(-4px);box-shadow:0 1px 0 #2a2a30 inset,0 18px 34px rgba(14,19,48,.28)}}
+.shot{{display:flex;flex-direction:column;gap:10px;background:#0b0b0d;color:#fff;border-radius:10px;padding:14px 14px 12px;font-family:"Arial Black","Helvetica Neue",Impact,system-ui,sans-serif;box-shadow:0 1px 0 #2a2a30 inset,0 10px 24px rgba(0,0,0,.45);transition:transform .2s,box-shadow .2s}}
+.shot:hover,.shot:focus-visible{{transform:translateY(-4px);box-shadow:0 1px 0 #2a2a30 inset,0 18px 34px rgba(0,0,0,.6)}}
 .shot:focus-visible{{outline:3px solid var(--c);outline-offset:4px}}
 .lab,.foot{{display:flex;justify-content:space-between;align-items:center;gap:8px;font:700 .62rem/1 ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:#9a9aa3}}
 .lab span:first-child{{color:var(--c)}}
