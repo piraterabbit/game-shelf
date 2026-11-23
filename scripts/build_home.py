@@ -6,12 +6,16 @@ n3 = sum(g["tag"] == "3D" for g in games)
 n2 = len(games) - n3
 e = html.escape
 
+COLORS = ["#ff9f1c", "#ffd60a", "#7bd63a", "#3fa9f5", "#c06cf2", "#ff5a4f"]   # classic cartridge-label colours
 cards = "\n".join(
-    f'''      <a class="shot" href="{g["slug"]}/" data-tag="{g["tag"]}" data-title="{e(g["title"].lower())}">
-        <span class="thumb"><img src="thumbs/{g["slug"]}.jpg" alt="" loading="lazy" width="960" height="600"><span class="tag">{g["tag"]}</span></span>
+    f'''      <a class="shot" href="{g["slug"]}/" data-tag="{g["tag"]}" data-title="{e(g["title"].lower())}" style="--c:{COLORS[i % len(COLORS)]}">
+        <span class="lab"><span>Game Shelf</span><span>GS-26{i + 1:02d}</span></span>
         <span class="name">{e(g["title"])}</span>
+        <span class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="thumb"><img src="thumbs/{g["slug"]}.jpg" alt="" loading="lazy" width="960" height="600"></span>
+        <span class="foot"><span>Game Program</span><span class="tag">{g["tag"]}</span></span>
       </a>'''
-    for g in games
+    for i, g in enumerate(games)
 )
 
 page = f'''<!doctype html>
@@ -44,15 +48,20 @@ nav.bar{{display:flex;justify-content:space-between;align-items:center;gap:16px;
 .tab[aria-selected=true]{{background:var(--chip)}}
 .tab span{{color:var(--mut);font-weight:500;margin-left:4px}}
 select{{font:inherit;font-weight:500;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer}}
-.grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(28px,4vw,56px) clamp(20px,3vw,48px);padding-bottom:72px}}
-.shot{{display:block}}
-.thumb{{position:relative;display:block;aspect-ratio:8/5;border-radius:var(--r-card);overflow:hidden;background:#eef0f5;box-shadow:0 0 0 1px rgba(14,19,48,.06)}}
+.grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(20px,2.6vw,36px);padding-bottom:72px}}
+.shot{{display:flex;flex-direction:column;gap:10px;background:#0b0b0d;color:#fff;border-radius:10px;padding:14px 14px 12px;font-family:"Arial Black","Helvetica Neue",Impact,system-ui,sans-serif;box-shadow:0 1px 0 #2a2a30 inset,0 10px 24px rgba(14,19,48,.18);transition:transform .2s,box-shadow .2s}}
+.shot:hover,.shot:focus-visible{{transform:translateY(-4px);box-shadow:0 1px 0 #2a2a30 inset,0 18px 34px rgba(14,19,48,.28)}}
+.shot:focus-visible{{outline:3px solid var(--c);outline-offset:4px}}
+.lab,.foot{{display:flex;justify-content:space-between;align-items:center;gap:8px;font:700 .62rem/1 ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:#9a9aa3}}
+.lab span:first-child{{color:var(--c)}}
+.name{{display:flex;align-items:flex-end;min-height:2.1em;font-weight:900;font-size:clamp(1.05rem,1.55vw,1.5rem);line-height:1.05;letter-spacing:.01em;text-transform:uppercase;color:var(--c);overflow-wrap:anywhere}}
+.stripes{{display:grid;gap:3px}}
+.stripes i{{display:block;height:3px;background:var(--c)}}
+.stripes i:nth-child(2){{opacity:.75}}.stripes i:nth-child(3){{opacity:.5}}.stripes i:nth-child(4){{opacity:.28}}
+.thumb{{position:relative;display:block;aspect-ratio:8/5;border-radius:4px;overflow:hidden;background:#1a1a1f;border:2px solid #f4f1e8}}
 .thumb img{{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s}}
 .shot:hover .thumb img,.shot:focus-visible .thumb img{{transform:scale(1.045)}}
-.shot:focus-visible{{outline:3px solid var(--acc);outline-offset:6px;border-radius:22px}}
-.tag{{position:absolute;top:12px;right:12px;font-size:.68rem;font-weight:800;letter-spacing:.08em;padding:4px 9px;border-radius:99px;background:rgba(255,255,255,.92);color:var(--fg)}}
-.shot[data-tag="3D"] .tag{{background:var(--acc);color:#2a1c00}}
-.name{{display:block;margin-top:12px;font-weight:600;font-size:1.02rem}}
+.tag{{color:#0b0b0d;background:var(--c);padding:3px 7px;border-radius:2px;letter-spacing:.1em}}
 .empty{{grid-column:1/-1;color:var(--mut)}}
 footer{{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);font-size:.9rem}}
 @media (max-width:1200px){{.grid{{grid-template-columns:repeat(3,1fr)}}}}
