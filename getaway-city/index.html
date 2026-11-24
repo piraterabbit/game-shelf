@@ -1086,7 +1086,7 @@ function fireShell(){
   const sh=Math.sin(me.h),ch=Math.cos(me.h),x=me.x+sh*5,z=me.z+ch*5,y=2.0+me.y;
   const m=new T.Mesh(SPH,Mb(0xffd27a));m.scale.set(.3,.3,.3);m.position.set(x,y,z);scene.add(m);
   shells.push({m,x,y,z,vx:sh*85+me.vx*.3,vz:ch*85+me.vz*.3,t:0});
-  G.fireT=1.5;sfxCrash(.55);G.shake=Math.max(G.shake,.3);me.vx-=sh*1.5;me.vz-=ch*1.5;
+  G.fireT=.7;sfxCrash(.55);G.shake=Math.max(G.shake,.3);me.vx-=sh*1.5;me.vz-=ch*1.5;
   for(let k=0;k<10;k++)emit(SPK,x,y,z,sh*14+rand(-3,3),rand(0,3),ch*14+rand(-3,3),rand(.15,.35),1,.7,.2);
   addHeat(26,'Firing a cannon');
 }
@@ -1452,7 +1452,7 @@ const TY={
   tesla:{name:'Tesla Roadster',top:60,accel:34,brake:44,rev:9,grip:7.5,steer:2.5,len:4.5,rad:.92,nc:3,hp:88,mass:1,dmg:1.1,drag:.11,cool:1,sight:100,eng:40,build:c=>buildTesla(c),cam:[8.4,3.3]},
   pizza:{name:'Pizza Van',top:30,accel:14,brake:32,rev:7,grip:5.6,steer:1.9,len:5.2,rad:1,nc:3,hp:140,mass:1.8,dmg:.6,drag:.19,cool:1.6,sight:70,eng:60,build:c=>buildPizzaVan(c),cam:[10.5,4.4]},
   f1:{name:'Formula 1',top:75,accel:42,brake:55,rev:8,grip:11,steer:2.6,len:5.4,rad:.8,nc:3,hp:60,mass:.8,dmg:1.3,drag:.1,cool:1,sight:110,eng:90,build:c=>buildF1(c),cam:[9.4,3.4]},
-  tank:{name:'Tank',tank:true,pivot:true,top:20,accel:8,brake:30,rev:6,grip:9,steer:1.1,len:6.8,rad:1.5,nc:3,hp:900,mass:14,dmg:.04,drag:.2,cool:1.5,sight:80,eng:35,build:c=>buildTank(c),cam:[13,5.8]},
+  tank:{name:'Tank',tank:true,pivot:true,top:30,accel:16,brake:40,rev:12,grip:11,steer:1.9,len:6.8,rad:1.5,nc:3,hp:1400,mass:14,dmg:.03,drag:.2,cool:1.5,sight:80,eng:35,build:c=>buildTank(c),cam:[13,5.8]},
   jet:{name:'Fighter Jet',fly:true,jet:true,top:110,accel:30,brake:25,rev:8,grip:8,steer:1.1,len:9,rad:1.6,nc:3,hp:240,mass:5,dmg:.9,drag:.08,cool:1.8,sight:140,eng:200,build:c=>buildJet(c),cam:[22,7]},
   limo:{name:'Limousine',top:34,accel:13,brake:30,rev:7,grip:5.6,steer:1.5,len:6.8,rad:.95,nc:4,hp:110,mass:1.9,dmg:.8,drag:.17,cool:1,sight:90,eng:60,build:c=>buildLimo(c),cam:[10.5,3.7]},
   ambulance:{name:'Ambulance',emerg:true,top:38,accel:16,brake:34,rev:8,grip:5.6,steer:1.8,len:5.6,rad:1.05,nc:3,hp:150,mass:2.2,dmg:.6,drag:.17,cool:1.2,sight:90,eng:58,build:c=>buildAmbulance(c),cam:[10.5,4.4]},
