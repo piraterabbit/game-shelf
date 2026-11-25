@@ -2,6 +2,19 @@ import json, html, sys
 root = sys.argv[1]
 games = json.load(open(f"{root}/games.json", encoding="utf8"))
 games.sort(key=lambda g: g["title"].lower())
+
+# Games flagged "online" in games.json get the shelf's multiplayer hook (shelf-online.js) inserted before
+# their first script. Re-applied on every build, so pulling a fresh artifact copy does not lose it.
+ONLINE_TAG = '<script src="../shelf-online.js" data-channel="{slug}"></script>\n'
+for g in games:
+    if not g.get("online"):
+        continue
+    path = f'{root}/{g["slug"]}/index.html'
+    html_src = open(path, encoding="utf8").read()
+    if "shelf-online.js" not in html_src:
+        at = html_src.index("<script")
+        open(path, "w", encoding="utf8").write(html_src[:at] + ONLINE_TAG.format(slug=g["slug"]) + html_src[at:])
+        print("online hook added:", g["slug"])
 n3 = sum(g["tag"] == "3D" for g in games)
 n2 = len(games) - n3
 e = html.escape
