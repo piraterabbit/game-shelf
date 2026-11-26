@@ -33,7 +33,8 @@
     "slug": "find-the-muffins",
     "title": "Find the Muffins",
     "tag": "3D",
-    "source": "https://claude.ai/artifact/FSsENXjUo3jFA28aaKinF9"
+    "source": "https://claude.ai/artifact/FSsENXjUo3jFA28aaKinF9",
+    "online": true
   },
   {
     "slug": "getaway-city",
@@ -58,7 +59,8 @@
     "slug": "maple-hollow",
     "title": "Maple Hollow",
     "tag": "3D",
-    "source": "https://claude.ai/artifact/XyBeXWvDdDgTAD3oLmTtUY"
+    "source": "https://claude.ai/artifact/XyBeXWvDdDgTAD3oLmTtUY",
+    "online": true
   },
   {
     "slug": "paintfall",
